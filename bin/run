@@ -1,0 +1,21 @@
+#!/usr/bin/env node
+var commander = require('../index');
+const { Command } = require('commander');
+const program = new Command();
+
+program
+  .version(require('../package').version, '-v, --version')
+  .option('-i, --insert <id>', 'insert version <id>')
+  .option('-n, --newVersion <newVersion>', 'compare version new')
+  .option('-d, --oldVersion <oldVersion>', 'compare version old')
+  .parse(process.argv);
+
+const options = program.opts();
+
+if (options.insert && options.insert !== true){
+  commander.insertVersion(options.insert);
+}
+
+if (options.newVersion && options.oldVersion){
+  commander.compareVersion(options.newVersion, options.oldVersion);
+}
