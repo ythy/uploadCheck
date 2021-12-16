@@ -66,8 +66,35 @@ export async function compareVersion(newVersion: string, oldVersion: string) {
       }));
     }
   });
-  console.log('result: \n', changedFiles.join('\n'));
+  console.log('result:\n', changedFiles.join('\n'));
 }
+
+export async function compareLastVersion() {
+  _config = await loadConfig();
+  const dbUtils = new DBUtils(_config);
+  const files = await dbUtils.getLastTwoFils();
+  dbUtils.close();
+  if (files?.length !== 2) {
+    console.log('invalid row length !');
+    return;
+  }
+  console.log('start compareVersion : ' + `${files[0].version} vs ${files[1].version}`);
+  const changedFiles: any[] = [];
+  const oldFileList: IFile[] = JSON.parse(files[1].files);
+  const newFileList: IFile[] = JSON.parse(files[0].files);
+  newFileList.forEach((file: IFile) => {
+    const old = oldFileList.find(f => f.name === file.name);
+    if (!old || (old && old.date !== file.date)) {
+      changedFiles.push(JSON.stringify({
+        name: file.name,
+        newDate: dateFormat(file.date),
+        oldDate: old?.date ? dateFormat(old?.date) : '',
+      }));
+    }
+  });
+  console.log('result:\n', changedFiles.join('\n'));
+}
+
 
 function loadConfig(){
   return readJsonFile<IConfig>(path.resolve(_baseDir, CONFIG_FILE));

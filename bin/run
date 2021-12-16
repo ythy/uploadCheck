@@ -8,6 +8,7 @@ program
   .option('-i, --insert <id>', 'insert version <id>')
   .option('-n, --newVersion <newVersion>', 'compare version new')
   .option('-d, --oldVersion <oldVersion>', 'compare version old')
+  .option('-l, --last', 'compare last two version')
   .parse(process.argv);
 
 const options = program.opts();
@@ -18,4 +19,8 @@ if (options.insert && options.insert !== true){
 
 if (options.newVersion && options.oldVersion){
   commander.compareVersion(options.newVersion, options.oldVersion);
+}
+
+if (options.last){
+  commander.compareLastVersion();
 }

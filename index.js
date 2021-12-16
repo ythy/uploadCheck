@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.compareVersion = exports.insertVersion = void 0;
+exports.compareLastVersion = exports.compareVersion = exports.insertVersion = void 0;
 var fs = require("fs");
 var path = require("path");
 var fileUtils_1 = require("./lib/fileUtils");
@@ -106,13 +106,51 @@ function compareVersion(newVersion, oldVersion) {
                             }));
                         }
                     });
-                    console.log('result: \n', changedFiles.join('\n'));
+                    console.log('result:\n', changedFiles.join('\n'));
                     return [2 /*return*/];
             }
         });
     });
 }
 exports.compareVersion = compareVersion;
+function compareLastVersion() {
+    return __awaiter(this, void 0, void 0, function () {
+        var dbUtils, files, changedFiles, oldFileList, newFileList;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, loadConfig()];
+                case 1:
+                    _config = _a.sent();
+                    dbUtils = new DBUtils_1["default"](_config);
+                    return [4 /*yield*/, dbUtils.getLastTwoFils()];
+                case 2:
+                    files = _a.sent();
+                    dbUtils.close();
+                    if ((files === null || files === void 0 ? void 0 : files.length) !== 2) {
+                        console.log('invalid row length !');
+                        return [2 /*return*/];
+                    }
+                    console.log('start compareVersion : ' + "".concat(files[0].version, " vs ").concat(files[1].version));
+                    changedFiles = [];
+                    oldFileList = JSON.parse(files[1].files);
+                    newFileList = JSON.parse(files[0].files);
+                    newFileList.forEach(function (file) {
+                        var old = oldFileList.find(function (f) { return f.name === file.name; });
+                        if (!old || (old && old.date !== file.date)) {
+                            changedFiles.push(JSON.stringify({
+                                name: file.name,
+                                newDate: dateFormat(file.date),
+                                oldDate: (old === null || old === void 0 ? void 0 : old.date) ? dateFormat(old === null || old === void 0 ? void 0 : old.date) : ''
+                            }));
+                        }
+                    });
+                    console.log('result:\n', changedFiles.join('\n'));
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.compareLastVersion = compareLastVersion;
 function loadConfig() {
     return (0, fileUtils_1.readJsonFile)(path.resolve(_baseDir, CONFIG_FILE));
 }
