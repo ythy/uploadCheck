@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.compareLastVersion = exports.compareVersion = exports.insertVersion = void 0;
+exports.copyCompileFiles = exports.compareLastVersion = exports.compareVersion = exports.insertVersion = void 0;
 var fs = require("fs");
 var path = require("path");
 var fileUtils_1 = require("./lib/fileUtils");
@@ -106,7 +106,7 @@ function compareVersion(newVersion, oldVersion) {
                             }));
                         }
                     });
-                    console.log('result:\n', changedFiles.join('\n'));
+                    console.log('result:', "\n".concat(changedFiles.join('\n')));
                     return [2 /*return*/];
             }
         });
@@ -144,13 +144,73 @@ function compareLastVersion() {
                             }));
                         }
                     });
-                    console.log('result:\n', changedFiles.join('\n'));
+                    console.log('result:', "\n".concat(changedFiles.join('\n')));
                     return [2 /*return*/];
             }
         });
     });
 }
 exports.compareLastVersion = compareLastVersion;
+function copyCompileFiles(jtracNo) {
+    var _a;
+    return __awaiter(this, void 0, void 0, function () {
+        var dbUtils, files, filelist, _loop_1, _i, filelist_1, file;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0: return [4 /*yield*/, loadConfig()];
+                case 1:
+                    // fs.copyFile('D:\\works\\js\\H5_MP\\MP\\src\\view\\riskmngr\\MpEW1MgmtMain.tsx', 
+                    //             'D:\\works\\ie\\MP\\src\\view\\riskmngr\\MpEW1MgmtMain.tsx', (err) => {
+                    //   if (err)
+                    //     throw err;
+                    //   console.log('source.txt was copied to destination.txt');
+                    // });
+                    // return;
+                    _config = _b.sent();
+                    dbUtils = new DBUtils_1["default"](_config);
+                    return [4 /*yield*/, dbUtils.getJtracInfo(jtracNo)];
+                case 2:
+                    files = _b.sent();
+                    dbUtils.close();
+                    if ((files === null || files === void 0 ? void 0 : files.length) !== 1) {
+                        console.log('error in search');
+                        return [2 /*return*/];
+                    }
+                    filelist = (_a = files[0].file_list) === null || _a === void 0 ? void 0 : _a.split(',');
+                    _loop_1 = function (file) {
+                        var result;
+                        return __generator(this, function (_c) {
+                            switch (_c.label) {
+                                case 0: return [4 /*yield*/, (0, fileUtils_1.copy)(file, _config.updateEntry, _config.compileEntry)["catch"](function (error) {
+                                        console.log("error in copy ".concat(file, ": "), error);
+                                    })];
+                                case 1:
+                                    result = _c.sent();
+                                    if (result) {
+                                        console.log('copied: ', file);
+                                    }
+                                    return [2 /*return*/];
+                            }
+                        });
+                    };
+                    _i = 0, filelist_1 = filelist;
+                    _b.label = 3;
+                case 3:
+                    if (!(_i < filelist_1.length)) return [3 /*break*/, 6];
+                    file = filelist_1[_i];
+                    return [5 /*yield**/, _loop_1(file)];
+                case 4:
+                    _b.sent();
+                    _b.label = 5;
+                case 5:
+                    _i++;
+                    return [3 /*break*/, 3];
+                case 6: return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.copyCompileFiles = copyCompileFiles;
 function loadConfig() {
     return (0, fileUtils_1.readJsonFile)(path.resolve(_baseDir, CONFIG_FILE));
 }
@@ -219,3 +279,4 @@ function dateFormat(timestamp) {
         hour12: false
     });
 }
+copyCompileFiles('V2A-8514');

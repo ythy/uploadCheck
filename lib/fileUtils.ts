@@ -57,3 +57,19 @@ export function readdir(path: string) {
   });
 }
 
+export function copy(pathInput: string, fromDir:string, toDir:string){
+  return new Promise<boolean>((resolve, reject) => {
+    fs.mkdir(path.dirname(path.resolve(toDir, pathInput)), { recursive: true }, (err) => {
+      if (err){
+        reject(err)
+      }
+      fs.copyFile(path.resolve(fromDir, pathInput), path.resolve(toDir, pathInput), (err) => {
+        if (err) {
+          reject(err)
+        }
+        resolve(true);
+      });
+    });
+  });
+}
+

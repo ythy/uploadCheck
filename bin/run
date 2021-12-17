@@ -9,6 +9,7 @@ program
   .option('-n, --newVersion <newVersion>', 'compare version new')
   .option('-d, --oldVersion <oldVersion>', 'compare version old')
   .option('-l, --last', 'compare last two version')
+  .option('-c, --copy <jtrac>', 'copy jtrac files')
   .parse(process.argv);
 
 const options = program.opts();
@@ -23,4 +24,8 @@ if (options.newVersion && options.oldVersion){
 
 if (options.last){
   commander.compareLastVersion();
+}
+
+if (options.copy && options.copy !== true){
+  commander.copyCompileFiles(options.copy);
 }

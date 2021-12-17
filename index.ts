@@ -2,7 +2,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Dirent } from 'fs';
-import { readJsonFile, access, readdir, stat, getFileExtension } from './lib/fileUtils';
+import { readJsonFile, access, readdir, stat, getFileExtension, copy } from './lib/fileUtils';
 import DBUtils from './lib/DBUtils';
 
 interface IConfig {
@@ -12,6 +12,8 @@ interface IConfig {
   user: string;//数据库用户名
   password: string;//数据库密码
   database: string;//数据库名
+  updateEntry: string;//更新目录入口
+  compileEntry: string;//编译目录入口
 }
 
 interface IVersion {
@@ -66,7 +68,7 @@ export async function compareVersion(newVersion: string, oldVersion: string) {
       }));
     }
   });
-  console.log('result:\n', changedFiles.join('\n'));
+  console.log('result:', `\n${changedFiles.join('\n')}`);
 }
 
 export async function compareLastVersion() {
@@ -92,7 +94,27 @@ export async function compareLastVersion() {
       }));
     }
   });
-  console.log('result:\n', changedFiles.join('\n'));
+  console.log('result:', `\n${changedFiles.join('\n')}`);
+}
+
+export async function copyCompileFiles(jtracNo:string) {
+  _config = await loadConfig();
+  const dbUtils = new DBUtils(_config);
+  const files = await dbUtils.getJtracInfo(jtracNo);
+  dbUtils.close();
+  if (files?.length !== 1) {
+    console.log('error in search');
+    return;
+  }
+  const filelist = files[0].file_list?.split(',');
+  for (const file of filelist) {
+    const result = await copy(file, _config.updateEntry, _config.compileEntry).catch(error=>{
+      console.log(`error in copy ${file}: `, error);
+    });
+    if(result){
+      console.log('copied: ', file);
+    }
+  }
 }
 
 
