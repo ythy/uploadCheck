@@ -1,6 +1,6 @@
 {
   "name": "upload_check",
-  "version": "0.0.4",
+  "version": "0.0.7",
   "description": "",
   "author": "maoxin",
   "repository": {
@@ -15,7 +15,9 @@
     "build": "npx tsc index.ts",
     "test": "node ./index.js", 
     "go": "npm run build && npm run test", 
-    "bin": "node ./bin/run -l" 
+    "bin": "node ./bin/run -c JCY-001",
+    "bin2": "node ./bin/run -l",
+    "bin3": "node ./bin/run -n 1.4.1 -d 1.5.1 "  
   },
   "maintainers": [
     {

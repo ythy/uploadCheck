@@ -56,6 +56,7 @@ export async function compareVersion(newVersion: string, oldVersion: string) {
     return;
   }
   const changedFiles:any[] = [];
+  const copiedFiles: string[] = [];
   const oldFileList:IFile[] =  JSON.parse(oldFiles[0].files);
   const newFileList:IFile[] = JSON.parse(newFiles[0].files);
   newFileList.forEach((file: IFile) => {
@@ -66,9 +67,14 @@ export async function compareVersion(newVersion: string, oldVersion: string) {
         newDate: dateFormat(file.date),
         oldDate: old?.date ? dateFormat(old?.date) : '',
       }));
+      copiedFiles.push(file.name.split('//').join('/'));
     }
   });
   console.log('result:', `\n${changedFiles.join('\n')}`);
+  console.log(`  ----------------------------------------------------
+  --------------------- Copy↓ -----------------------
+  ----------------------------------------------------`);
+  console.log(`${copiedFiles.join('\n')}`);
 }
 
 export async function compareLastVersion() {
@@ -82,6 +88,7 @@ export async function compareLastVersion() {
   }
   console.log('start compareVersion : ' + `${files[0].version} vs ${files[1].version}`);
   const changedFiles: any[] = [];
+  const copiedFiles: string[] = [];
   const oldFileList: IFile[] = JSON.parse(files[1].files);
   const newFileList: IFile[] = JSON.parse(files[0].files);
   newFileList.forEach((file: IFile) => {
@@ -92,24 +99,30 @@ export async function compareLastVersion() {
         newDate: dateFormat(file.date),
         oldDate: old?.date ? dateFormat(old?.date) : '',
       }));
+      copiedFiles.push(file.name.split('//').join('/'));
     }
   });
   console.log('result:', `\n${changedFiles.join('\n')}`);
+  console.log(`  ----------------------------------------------------
+  --------------------- Copy↓ -----------------------
+  ----------------------------------------------------`);
+  console.log(`${copiedFiles.join('\n')}`);
 }
 
 export async function copyCompileFiles(jtracNo:string) {
   _config = await loadConfig();
   const dbUtils = new DBUtils(_config);
-  const files = await dbUtils.getJtracInfo(jtracNo);
+  const jtracFiles = await dbUtils.getJtracInfo(jtracNo);
   dbUtils.close();
-  if (files?.length !== 1) {
+  if (jtracFiles?.length !== 1) {
     console.log('error in search');
     return;
   }
-  const filelist = files[0].file_list?.split(',');
+  const filelist = jtracFiles[0].file_list?.split(',');
   for (const file of filelist) {
     const result = await copy(file, _config.updateEntry, _config.compileEntry).catch(error=>{
       console.log(`error in copy ${file}: `, error);
+      throw error;
     });
     if(result){
       console.log('copied: ', file);

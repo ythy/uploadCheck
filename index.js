@@ -73,7 +73,7 @@ exports.insertVersion = insertVersion;
 function compareVersion(newVersion, oldVersion) {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function () {
-        var dbUtils, newFiles, oldFiles, changedFiles, oldFileList, newFileList;
+        var dbUtils, newFiles, oldFiles, changedFiles, copiedFiles, oldFileList, newFileList;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
@@ -94,6 +94,7 @@ function compareVersion(newVersion, oldVersion) {
                         return [2 /*return*/];
                     }
                     changedFiles = [];
+                    copiedFiles = [];
                     oldFileList = JSON.parse(oldFiles[0].files);
                     newFileList = JSON.parse(newFiles[0].files);
                     newFileList.forEach(function (file) {
@@ -104,9 +105,12 @@ function compareVersion(newVersion, oldVersion) {
                                 newDate: dateFormat(file.date),
                                 oldDate: (old === null || old === void 0 ? void 0 : old.date) ? dateFormat(old === null || old === void 0 ? void 0 : old.date) : ''
                             }));
+                            copiedFiles.push(file.name.split('//').join('/'));
                         }
                     });
                     console.log('result:', "\n".concat(changedFiles.join('\n')));
+                    console.log("  ----------------------------------------------------\n  --------------------- Copy\u2193 -----------------------\n  ----------------------------------------------------");
+                    console.log("".concat(copiedFiles.join('\n')));
                     return [2 /*return*/];
             }
         });
@@ -115,7 +119,7 @@ function compareVersion(newVersion, oldVersion) {
 exports.compareVersion = compareVersion;
 function compareLastVersion() {
     return __awaiter(this, void 0, void 0, function () {
-        var dbUtils, files, changedFiles, oldFileList, newFileList;
+        var dbUtils, files, changedFiles, copiedFiles, oldFileList, newFileList;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, loadConfig()];
@@ -132,6 +136,7 @@ function compareLastVersion() {
                     }
                     console.log('start compareVersion : ' + "".concat(files[0].version, " vs ").concat(files[1].version));
                     changedFiles = [];
+                    copiedFiles = [];
                     oldFileList = JSON.parse(files[1].files);
                     newFileList = JSON.parse(files[0].files);
                     newFileList.forEach(function (file) {
@@ -142,9 +147,12 @@ function compareLastVersion() {
                                 newDate: dateFormat(file.date),
                                 oldDate: (old === null || old === void 0 ? void 0 : old.date) ? dateFormat(old === null || old === void 0 ? void 0 : old.date) : ''
                             }));
+                            copiedFiles.push(file.name.split('//').join('/'));
                         }
                     });
                     console.log('result:', "\n".concat(changedFiles.join('\n')));
+                    console.log("  ----------------------------------------------------\n  --------------------- Copy\u2193 -----------------------\n  ----------------------------------------------------");
+                    console.log("".concat(copiedFiles.join('\n')));
                     return [2 /*return*/];
             }
         });
@@ -154,35 +162,29 @@ exports.compareLastVersion = compareLastVersion;
 function copyCompileFiles(jtracNo) {
     var _a;
     return __awaiter(this, void 0, void 0, function () {
-        var dbUtils, files, filelist, _loop_1, _i, filelist_1, file;
+        var dbUtils, jtracFiles, filelist, _loop_1, _i, filelist_1, file;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0: return [4 /*yield*/, loadConfig()];
                 case 1:
-                    // fs.copyFile('D:\\works\\js\\H5_MP\\MP\\src\\view\\riskmngr\\MpEW1MgmtMain.tsx', 
-                    //             'D:\\works\\ie\\MP\\src\\view\\riskmngr\\MpEW1MgmtMain.tsx', (err) => {
-                    //   if (err)
-                    //     throw err;
-                    //   console.log('source.txt was copied to destination.txt');
-                    // });
-                    // return;
                     _config = _b.sent();
                     dbUtils = new DBUtils_1["default"](_config);
                     return [4 /*yield*/, dbUtils.getJtracInfo(jtracNo)];
                 case 2:
-                    files = _b.sent();
+                    jtracFiles = _b.sent();
                     dbUtils.close();
-                    if ((files === null || files === void 0 ? void 0 : files.length) !== 1) {
+                    if ((jtracFiles === null || jtracFiles === void 0 ? void 0 : jtracFiles.length) !== 1) {
                         console.log('error in search');
                         return [2 /*return*/];
                     }
-                    filelist = (_a = files[0].file_list) === null || _a === void 0 ? void 0 : _a.split(',');
+                    filelist = (_a = jtracFiles[0].file_list) === null || _a === void 0 ? void 0 : _a.split(',');
                     _loop_1 = function (file) {
                         var result;
                         return __generator(this, function (_c) {
                             switch (_c.label) {
                                 case 0: return [4 /*yield*/, (0, fileUtils_1.copy)(file, _config.updateEntry, _config.compileEntry)["catch"](function (error) {
                                         console.log("error in copy ".concat(file, ": "), error);
+                                        throw error;
                                     })];
                                 case 1:
                                     result = _c.sent();
@@ -279,4 +281,3 @@ function dateFormat(timestamp) {
         hour12: false
     });
 }
-copyCompileFiles('V2A-8514');
