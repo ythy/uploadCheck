@@ -32,15 +32,41 @@ const _baseDir = process.cwd();
 const CONFIG_FILE = 'upload_check_config.json';
 let _config = {} as IConfig; //必备参数
 
-export async function insertVersion(version:string){
+export async function insertVersion(version: string) {
   console.log('start insertVersion: ' + version);
   _config = await loadConfig();
   const rootFiles = await readdir(path.resolve(_baseDir, _config.entry));
   const files: IFile[] = [];
   await recordByDir(path.resolve(_baseDir, _config.entry), rootFiles, files);
   const dbUtils = new DBUtils(_config);
-  dbUtils.addVersion(version, JSON.stringify(files));
-  dbUtils.close();
+  await dbUtils.addVersion(version, JSON.stringify(files));
+  console.log('end insertVersion: ' + version);
+
+  const compares = await dbUtils.getLastTwoFils();
+  console.log('start compareVersion : ' + `${compares[0].version} vs ${compares[1].version}`);
+  const modules: string[] = [];
+  const oldFileList: IFile[] = JSON.parse(compares[1].files);
+  const newFileList: IFile[] = JSON.parse(compares[0].files);
+  newFileList.forEach((file: IFile) => {
+    const old = oldFileList.find(f => f.name === file.name);
+    if (!old || (old && old.date !== file.date)) {
+      modules.push(file.name.split('//').join('/'));
+    }
+  });
+
+  console.log('start update modules: ' + modules.join(','));
+  dbUtils.updateJtracTo45(version, modules.join(',')).then(async result => {
+    dbUtils.close();
+    if (!result.changedRows || result.changedRows < 1) {
+      console.log(`error in update jtrac: changedRows < 1`);
+    } else {
+      console.log(`update jtrac status success: changedRows ( ${result?.changedRows} )`);
+    }
+  }).catch(error => {
+    dbUtils.close();
+    console.log(`error in in update jtrac: `, error);
+    throw error;
+  });
 }
  
 export async function compareVersion(newVersion: string, oldVersion: string) {

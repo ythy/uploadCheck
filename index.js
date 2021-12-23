@@ -44,9 +44,10 @@ var DBUtils_1 = require("./lib/DBUtils");
 var _baseDir = process.cwd();
 var CONFIG_FILE = 'upload_check_config.json';
 var _config = {}; //必备参数
-function insertVersion(version) {
+function insertVersion(version, modules) {
     return __awaiter(this, void 0, void 0, function () {
         var rootFiles, files, dbUtils;
+        var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -62,8 +63,26 @@ function insertVersion(version) {
                 case 3:
                     _a.sent();
                     dbUtils = new DBUtils_1["default"](_config);
-                    dbUtils.addVersion(version, JSON.stringify(files));
-                    dbUtils.close();
+                    return [4 /*yield*/, dbUtils.addVersion(version, JSON.stringify(files))];
+                case 4:
+                    _a.sent();
+                    console.log('end insertVersion: ' + version);
+                    dbUtils.updateJtracTo45(version, modules).then(function (result) { return __awaiter(_this, void 0, void 0, function () {
+                        return __generator(this, function (_a) {
+                            dbUtils.close();
+                            if (!result.changedRows || result.changedRows < 1) {
+                                console.log("error in update jtrac: changedRows < 1");
+                            }
+                            else {
+                                console.log("update jtrac status success: changedRows ( ".concat(result === null || result === void 0 ? void 0 : result.changedRows, " )"));
+                            }
+                            return [2 /*return*/];
+                        });
+                    }); })["catch"](function (error) {
+                        dbUtils.close();
+                        console.log("error in in update jtrac: ", error);
+                        throw error;
+                    });
                     return [2 /*return*/];
             }
         });
@@ -297,3 +316,4 @@ function dateFormat(timestamp) {
         hour12: false
     });
 }
+insertVersion('0.0.1', '/main/common.js,/main/index.js');

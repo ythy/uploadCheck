@@ -14,12 +14,19 @@ export default class DBUtils{
   }
 
   addVersion(version:string, files:string){
-    this.connection.query(`INSERT INTO ${DB_H5_HISTORY} SET ?`, {
-      version, files, 
-      created_time: CURRENT_TIMESTAMP,
-    }, function(error, results, fields) {
-      if (error) throw error;
-    });
+    return new Promise<any>((resolve, reject) => {
+      this.connection.query(`INSERT INTO ${DB_H5_HISTORY} SET ?`, {
+        version, files,
+        created_time: CURRENT_TIMESTAMP,
+      }, function(error, results, fields) {
+        if (error){
+          throw error;
+          reject(error);
+        }else {
+          resolve(results);
+        }
+      });
+    })
   }
 
   getFilsByVersion(version:string){
@@ -85,6 +92,32 @@ export default class DBUtils{
       });
     })
   }
+
+   /*
+   *  OkPacket {
+   *  fieldCount: 0,
+   *  affectedRows: 1,
+   *  insertId: 0,
+   *  serverStatus: 34,
+   *  warningCount: 0,
+   *  message: '(Rows matched: 1  Changed: 1  Warnings: 0',
+   *  protocol41: true,
+   *  changedRows: 1
+   *  }
+   */
+  updateJtracTo45(version: string, modules: string) {
+    return new Promise<any>((resolve, reject) => {
+      this.connection.query(`UPDATE ${DB_JTRAC_LIST} SET status = 'B', module_list = ? WHERE version = ? `, [modules, version], (error, results, fields) => {
+        if (error) {
+          throw error;
+          reject(error);
+        } else {
+          resolve(results);
+        }
+      });
+    })
+  }
+
 
 
   close(){
