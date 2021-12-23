@@ -159,35 +159,41 @@ function compareLastVersion() {
     });
 }
 exports.compareLastVersion = compareLastVersion;
-function copyCompileFiles(jtracNo) {
+function copyCompileFiles(version) {
     var _a;
     return __awaiter(this, void 0, void 0, function () {
-        var dbUtils, jtracFiles, filelist, _loop_1, _i, filelist_1, file;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var dbUtils, jtracFiles, _i, jtracFiles_1, jtrac, filelist, _loop_1, _b, filelist_1, file;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0: return [4 /*yield*/, loadConfig()];
                 case 1:
-                    _config = _b.sent();
+                    _config = _c.sent();
                     dbUtils = new DBUtils_1["default"](_config);
-                    return [4 /*yield*/, dbUtils.getJtracInfo(jtracNo)];
+                    return [4 /*yield*/, dbUtils.getJtracByVersion(version)];
                 case 2:
-                    jtracFiles = _b.sent();
+                    jtracFiles = _c.sent();
                     dbUtils.close();
-                    if ((jtracFiles === null || jtracFiles === void 0 ? void 0 : jtracFiles.length) !== 1) {
+                    if (!(jtracFiles === null || jtracFiles === void 0 ? void 0 : jtracFiles.length) || (jtracFiles === null || jtracFiles === void 0 ? void 0 : jtracFiles.length) === 0) {
                         console.log('error in search');
                         return [2 /*return*/];
                     }
-                    filelist = (_a = jtracFiles[0].file_list) === null || _a === void 0 ? void 0 : _a.split(',');
+                    _i = 0, jtracFiles_1 = jtracFiles;
+                    _c.label = 3;
+                case 3:
+                    if (!(_i < jtracFiles_1.length)) return [3 /*break*/, 8];
+                    jtrac = jtracFiles_1[_i];
+                    console.log("start copy jtrac: ".concat(jtrac.jtrac_no));
+                    filelist = (_a = jtrac.file_list) === null || _a === void 0 ? void 0 : _a.split(',');
                     _loop_1 = function (file) {
                         var result;
-                        return __generator(this, function (_c) {
-                            switch (_c.label) {
+                        return __generator(this, function (_d) {
+                            switch (_d.label) {
                                 case 0: return [4 /*yield*/, (0, fileUtils_1.copy)(file, _config.updateEntry, _config.compileEntry)["catch"](function (error) {
                                         console.log("error in copy ".concat(file, ": "), error);
                                         throw error;
                                     })];
                                 case 1:
-                                    result = _c.sent();
+                                    result = _d.sent();
                                     if (result) {
                                         console.log('copied: ', file);
                                     }
@@ -195,19 +201,22 @@ function copyCompileFiles(jtracNo) {
                             }
                         });
                     };
-                    _i = 0, filelist_1 = filelist;
-                    _b.label = 3;
-                case 3:
-                    if (!(_i < filelist_1.length)) return [3 /*break*/, 6];
-                    file = filelist_1[_i];
-                    return [5 /*yield**/, _loop_1(file)];
+                    _b = 0, filelist_1 = filelist;
+                    _c.label = 4;
                 case 4:
-                    _b.sent();
-                    _b.label = 5;
+                    if (!(_b < filelist_1.length)) return [3 /*break*/, 7];
+                    file = filelist_1[_b];
+                    return [5 /*yield**/, _loop_1(file)];
                 case 5:
+                    _c.sent();
+                    _c.label = 6;
+                case 6:
+                    _b++;
+                    return [3 /*break*/, 4];
+                case 7:
                     _i++;
                     return [3 /*break*/, 3];
-                case 6: return [2 /*return*/];
+                case 8: return [2 /*return*/];
             }
         });
     });
@@ -281,3 +290,4 @@ function dateFormat(timestamp) {
         hour12: false
     });
 }
+copyCompileFiles('1.6.3');

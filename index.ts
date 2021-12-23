@@ -109,25 +109,30 @@ export async function compareLastVersion() {
   console.log(`${copiedFiles.join('\n')}`);
 }
 
-export async function copyCompileFiles(jtracNo:string) {
+export async function copyCompileFiles(version:string) {
   _config = await loadConfig();
   const dbUtils = new DBUtils(_config);
-  const jtracFiles = await dbUtils.getJtracInfo(jtracNo);
+  const jtracFiles = await dbUtils.getJtracByVersion(version);
   dbUtils.close();
-  if (jtracFiles?.length !== 1) {
+  if (!jtracFiles?.length || jtracFiles?.length === 0) {
     console.log('error in search');
     return;
   }
-  const filelist = jtracFiles[0].file_list?.split(',');
-  for (const file of filelist) {
-    const result = await copy(file, _config.updateEntry, _config.compileEntry).catch(error=>{
-      console.log(`error in copy ${file}: `, error);
-      throw error;
-    });
-    if(result){
-      console.log('copied: ', file);
+ 
+  for (const jtrac of jtracFiles) {
+    console.log(`start copy jtrac: ${jtrac.jtrac_no}`);
+    const filelist = jtrac.file_list?.split(',');
+    for (const file of filelist) {
+      const result = await copy(file, _config.updateEntry, _config.compileEntry).catch(error => {
+        console.log(`error in copy ${file}: `, error);
+        throw error;
+      });
+      if (result) {
+        console.log('copied: ', file);
+      }
     }
   }
+  
 }
 
 

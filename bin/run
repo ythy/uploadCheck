@@ -9,7 +9,7 @@ program
   .option('-n, --newVersion <newVersion>', 'compare version new')
   .option('-d, --oldVersion <oldVersion>', 'compare version old')
   .option('-l, --last', 'compare last two version')
-  .option('-c, --copy <jtrac>', 'copy jtrac files')
+  .option('-c, --copy <version>', 'copy jtrac files')
   .parse(process.argv);
 
 const options = program.opts();

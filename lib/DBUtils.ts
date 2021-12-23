@@ -68,7 +68,22 @@ export default class DBUtils{
         }
       });
     })
+  }
 
+  getJtracByVersion(version: string) {
+    return new Promise<any>((resolve, reject) => {
+      // error will be an Error if one occurred during the query
+      // results will contain the results of the query
+      // fields will contain information about the returned results fields (if any)
+      this.connection.query(`SELECT * FROM ${DB_JTRAC_LIST} WHERE version = ? AND status = 'A'`, [version], (error, results, fields) => {
+        if (error) {
+          throw error;
+          reject(error);
+        } else {
+          resolve(results);
+        }
+      });
+    })
   }
 
 
