@@ -160,63 +160,70 @@ function compareLastVersion() {
 }
 exports.compareLastVersion = compareLastVersion;
 function copyCompileFiles(version) {
-    var _a;
     return __awaiter(this, void 0, void 0, function () {
-        var dbUtils, jtracFiles, _i, jtracFiles_1, jtrac, filelist, _loop_1, _b, filelist_1, file;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
+        var dbUtils;
+        var _this = this;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
                 case 0: return [4 /*yield*/, loadConfig()];
                 case 1:
-                    _config = _c.sent();
+                    _config = _a.sent();
                     dbUtils = new DBUtils_1["default"](_config);
-                    return [4 /*yield*/, dbUtils.getJtracByVersion(version)];
-                case 2:
-                    jtracFiles = _c.sent();
-                    dbUtils.close();
-                    if (!(jtracFiles === null || jtracFiles === void 0 ? void 0 : jtracFiles.length) || (jtracFiles === null || jtracFiles === void 0 ? void 0 : jtracFiles.length) === 0) {
-                        console.log('error in search');
-                        return [2 /*return*/];
-                    }
-                    _i = 0, jtracFiles_1 = jtracFiles;
-                    _c.label = 3;
-                case 3:
-                    if (!(_i < jtracFiles_1.length)) return [3 /*break*/, 8];
-                    jtrac = jtracFiles_1[_i];
-                    console.log("start copy jtrac: ".concat(jtrac.jtrac_no));
-                    filelist = (_a = jtrac.file_list) === null || _a === void 0 ? void 0 : _a.split(',');
-                    _loop_1 = function (file) {
-                        var result;
-                        return __generator(this, function (_d) {
-                            switch (_d.label) {
-                                case 0: return [4 /*yield*/, (0, fileUtils_1.copy)(file, _config.updateEntry, _config.compileEntry)["catch"](function (error) {
-                                        console.log("error in copy ".concat(file, ": "), error);
-                                        throw error;
-                                    })];
-                                case 1:
-                                    result = _d.sent();
-                                    if (result) {
-                                        console.log('copied: ', file);
+                    dbUtils.getJtracByVersion(version).then(function (jtracFiles) { return __awaiter(_this, void 0, void 0, function () {
+                        var _i, jtracFiles_1, jtrac, filelist, _loop_1, _a, filelist_1, file;
+                        var _b;
+                        return __generator(this, function (_c) {
+                            switch (_c.label) {
+                                case 0:
+                                    dbUtils.close();
+                                    if (!(jtracFiles === null || jtracFiles === void 0 ? void 0 : jtracFiles.length) || (jtracFiles === null || jtracFiles === void 0 ? void 0 : jtracFiles.length) === 0) {
+                                        console.log('error in search');
+                                        return [2 /*return*/];
                                     }
-                                    return [2 /*return*/];
+                                    _i = 0, jtracFiles_1 = jtracFiles;
+                                    _c.label = 1;
+                                case 1:
+                                    if (!(_i < jtracFiles_1.length)) return [3 /*break*/, 6];
+                                    jtrac = jtracFiles_1[_i];
+                                    console.log("start copy jtrac: ".concat(jtrac.jtrac_no));
+                                    filelist = (_b = jtrac.file_list) === null || _b === void 0 ? void 0 : _b.split(',');
+                                    _loop_1 = function (file) {
+                                        var result;
+                                        return __generator(this, function (_d) {
+                                            switch (_d.label) {
+                                                case 0: return [4 /*yield*/, (0, fileUtils_1.copy)(file, _config.updateEntry, _config.compileEntry)["catch"](function (error) {
+                                                        console.log("error in copy ".concat(file, ": "), error);
+                                                        throw error;
+                                                    })];
+                                                case 1:
+                                                    result = _d.sent();
+                                                    if (result) {
+                                                        console.log('copied: ', file);
+                                                    }
+                                                    return [2 /*return*/];
+                                            }
+                                        });
+                                    };
+                                    _a = 0, filelist_1 = filelist;
+                                    _c.label = 2;
+                                case 2:
+                                    if (!(_a < filelist_1.length)) return [3 /*break*/, 5];
+                                    file = filelist_1[_a];
+                                    return [5 /*yield**/, _loop_1(file)];
+                                case 3:
+                                    _c.sent();
+                                    _c.label = 4;
+                                case 4:
+                                    _a++;
+                                    return [3 /*break*/, 2];
+                                case 5:
+                                    _i++;
+                                    return [3 /*break*/, 1];
+                                case 6: return [2 /*return*/];
                             }
                         });
-                    };
-                    _b = 0, filelist_1 = filelist;
-                    _c.label = 4;
-                case 4:
-                    if (!(_b < filelist_1.length)) return [3 /*break*/, 7];
-                    file = filelist_1[_b];
-                    return [5 /*yield**/, _loop_1(file)];
-                case 5:
-                    _c.sent();
-                    _c.label = 6;
-                case 6:
-                    _b++;
-                    return [3 /*break*/, 4];
-                case 7:
-                    _i++;
-                    return [3 /*break*/, 3];
-                case 8: return [2 /*return*/];
+                    }); });
+                    return [2 /*return*/];
             }
         });
     });
@@ -290,4 +297,3 @@ function dateFormat(timestamp) {
         hour12: false
     });
 }
-copyCompileFiles('1.6.3');
