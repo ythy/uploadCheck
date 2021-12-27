@@ -107,7 +107,7 @@ export default class DBUtils{
    */
   updateJtracTo45(version: string, modules: string) {
     return new Promise<any>((resolve, reject) => {
-      this.connection.query(`UPDATE ${DB_JTRAC_LIST} SET status = 'B', module_list = ? WHERE version = ? `, [modules, version], (error, results, fields) => {
+      this.connection.query(`UPDATE ${DB_JTRAC_LIST} SET status = 'B', module_list = ? WHERE version = ? AND status = 'A' `, [modules, version], (error, results, fields) => {
         if (error) {
           throw error;
           reject(error);

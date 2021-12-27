@@ -50,7 +50,7 @@ export async function insertVersion(version: string) {
   newFileList.forEach((file: IFile) => {
     const old = oldFileList.find(f => f.name === file.name);
     if (!old || (old && old.date !== file.date)) {
-      modules.push(file.name.split('//').join('/'));
+      modules.push(file.name.split('\\').join('/'));
     }
   });
 
@@ -93,7 +93,7 @@ export async function compareVersion(newVersion: string, oldVersion: string) {
         newDate: dateFormat(file.date),
         oldDate: old?.date ? dateFormat(old?.date) : '',
       }));
-      copiedFiles.push(file.name.split('//').join('/'));
+      copiedFiles.push(file.name.split('\\').join('/'));
     }
   });
   console.log('result:', `\n${changedFiles.join('\n')}`);
@@ -125,7 +125,7 @@ export async function compareLastVersion() {
         newDate: dateFormat(file.date),
         oldDate: old?.date ? dateFormat(old?.date) : '',
       }));
-      copiedFiles.push(file.name.split('//').join('/'));
+      copiedFiles.push(file.name.split('\\').join('/'));
     }
   });
   console.log('result:', `\n${changedFiles.join('\n')}`);

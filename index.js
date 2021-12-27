@@ -44,9 +44,9 @@ var DBUtils_1 = require("./lib/DBUtils");
 var _baseDir = process.cwd();
 var CONFIG_FILE = 'upload_check_config.json';
 var _config = {}; //必备参数
-function insertVersion(version, modules) {
+function insertVersion(version) {
     return __awaiter(this, void 0, void 0, function () {
-        var rootFiles, files, dbUtils;
+        var rootFiles, files, dbUtils, compares, modules, oldFileList, newFileList;
         var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -67,7 +67,21 @@ function insertVersion(version, modules) {
                 case 4:
                     _a.sent();
                     console.log('end insertVersion: ' + version);
-                    dbUtils.updateJtracTo45(version, modules).then(function (result) { return __awaiter(_this, void 0, void 0, function () {
+                    return [4 /*yield*/, dbUtils.getLastTwoFils()];
+                case 5:
+                    compares = _a.sent();
+                    console.log('start compareVersion : ' + "".concat(compares[0].version, " vs ").concat(compares[1].version));
+                    modules = [];
+                    oldFileList = JSON.parse(compares[1].files);
+                    newFileList = JSON.parse(compares[0].files);
+                    newFileList.forEach(function (file) {
+                        var old = oldFileList.find(function (f) { return f.name === file.name; });
+                        if (!old || (old && old.date !== file.date)) {
+                            modules.push(file.name.split('\\').join('/'));
+                        }
+                    });
+                    console.log('start update modules: ' + modules.join(','));
+                    dbUtils.updateJtracTo45(version, modules.join(',')).then(function (result) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             dbUtils.close();
                             if (!result.changedRows || result.changedRows < 1) {
@@ -124,7 +138,7 @@ function compareVersion(newVersion, oldVersion) {
                                 newDate: dateFormat(file.date),
                                 oldDate: (old === null || old === void 0 ? void 0 : old.date) ? dateFormat(old === null || old === void 0 ? void 0 : old.date) : ''
                             }));
-                            copiedFiles.push(file.name.split('//').join('/'));
+                            copiedFiles.push(file.name.split('\\').join('/'));
                         }
                     });
                     console.log('result:', "\n".concat(changedFiles.join('\n')));
@@ -166,7 +180,7 @@ function compareLastVersion() {
                                 newDate: dateFormat(file.date),
                                 oldDate: (old === null || old === void 0 ? void 0 : old.date) ? dateFormat(old === null || old === void 0 ? void 0 : old.date) : ''
                             }));
-                            copiedFiles.push(file.name.split('//').join('/'));
+                            copiedFiles.push(file.name.split('\\').join('/'));
                         }
                     });
                     console.log('result:', "\n".concat(changedFiles.join('\n')));
@@ -316,4 +330,3 @@ function dateFormat(timestamp) {
         hour12: false
     });
 }
-insertVersion('0.0.1', '/main/common.js,/main/index.js');
