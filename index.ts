@@ -93,6 +93,7 @@ export async function insertVersion(version: string) {
       });
       console.log('upload jsp result: ' + jspResult);
       console.log('end upload files ');
+      client.end();
     }
   }).catch(error => {
     dbUtils.close();

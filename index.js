@@ -83,52 +83,58 @@ function insertVersion(version) {
                     });
                     console.log('start update modules: ' + modules.join(','));
                     dbUtils.updateJtracTo45(version, modules.join(',')).then(function (result) { return __awaiter(_this, void 0, void 0, function () {
-                        var conn_1;
-                        var _this = this;
+                        var client, modulesCombined_2, _i, modulesCombined_1, modulePath, result_1, jspResult;
                         return __generator(this, function (_a) {
-                            dbUtils.close();
-                            if (!result.changedRows || result.changedRows < 1) {
-                                console.log("error in update jtrac: changedRows < 1");
-                            }
-                            else {
-                                console.log("update jtrac status success: changedRows ( ".concat(result === null || result === void 0 ? void 0 : result.changedRows, " )"));
-                                //开始上传FTP
-                                console.log('start upload files ');
-                                conn_1 = new SftpClient('42');
-                                conn_1.connect({
-                                    host: _config.ftp_host,
-                                    port: 22,
-                                    username: _config.ftp_user,
-                                    password: _config.ftp_pw
-                                }).then(function () { return __awaiter(_this, void 0, void 0, function () {
-                                    var _i, modules_1, modulePath, result_1;
-                                    return __generator(this, function (_a) {
-                                        switch (_a.label) {
-                                            case 0:
-                                                _i = 0, modules_1 = modules;
-                                                _a.label = 1;
-                                            case 1:
-                                                if (!(_i < modules_1.length)) return [3 /*break*/, 4];
-                                                modulePath = modules_1[_i];
-                                                console.log('upload file: ' + modulePath);
-                                                return [4 /*yield*/, conn_1.put(path.join(_config.entry, modulePath), path.join(_config.remote_entry_script, path.dirname(modulePath)))];
-                                            case 2:
-                                                result_1 = _a.sent();
-                                                console.log('upload file result: ' + result_1);
-                                                _a.label = 3;
-                                            case 3:
-                                                _i++;
-                                                return [3 /*break*/, 1];
-                                            case 4:
-                                                console.log('end upload files ');
-                                                return [2 /*return*/];
-                                        }
+                            switch (_a.label) {
+                                case 0:
+                                    dbUtils.close();
+                                    if (!(!result.changedRows || result.changedRows < 1)) return [3 /*break*/, 1];
+                                    console.log("error in update jtrac: changedRows < 1");
+                                    return [3 /*break*/, 8];
+                                case 1:
+                                    console.log("update jtrac status success: changedRows ( ".concat(result === null || result === void 0 ? void 0 : result.changedRows, " )"));
+                                    //开始上传FTP
+                                    console.log('start upload files ');
+                                    client = new SftpClient();
+                                    return [4 /*yield*/, client.connect({
+                                            host: _config.ftp_host,
+                                            port: 22,
+                                            username: _config.ftp_user,
+                                            password: _config.ftp_pw
+                                        })];
+                                case 2:
+                                    _a.sent();
+                                    modulesCombined_2 = [];
+                                    modules.forEach(function (originPath) {
+                                        modulesCombined_2.push(originPath, originPath + '.gz', originPath + '.map');
                                     });
-                                }); })["catch"](function (err) {
-                                    console.log(err, 'catch error while uploud');
-                                });
+                                    _i = 0, modulesCombined_1 = modulesCombined_2;
+                                    _a.label = 3;
+                                case 3:
+                                    if (!(_i < modulesCombined_1.length)) return [3 /*break*/, 6];
+                                    modulePath = modulesCombined_1[_i];
+                                    console.log('upload file: ' + modulePath);
+                                    return [4 /*yield*/, client.put(path.join(_config.entry, modulePath), _config.remote_entry_script + modulePath)["catch"](function (err) {
+                                            console.log('upload file error: ' + err);
+                                        })];
+                                case 4:
+                                    result_1 = _a.sent();
+                                    console.log('upload file result: ' + result_1);
+                                    _a.label = 5;
+                                case 5:
+                                    _i++;
+                                    return [3 /*break*/, 3];
+                                case 6: return [4 /*yield*/, client.put(_config.local_entry_jsp, _config.remote_entry_jsp)["catch"](function (err) {
+                                        console.log('upload jsp error: ' + err);
+                                    })];
+                                case 7:
+                                    jspResult = _a.sent();
+                                    console.log('upload jsp result: ' + jspResult);
+                                    console.log('end upload files ');
+                                    client.end();
+                                    _a.label = 8;
+                                case 8: return [2 /*return*/];
                             }
-                            return [2 /*return*/];
                         });
                     }); })["catch"](function (error) {
                         dbUtils.close();
@@ -141,52 +147,6 @@ function insertVersion(version) {
     });
 }
 exports.insertVersion = insertVersion;
-function test() {
-    return __awaiter(this, void 0, void 0, function () {
-        var client, list, modules, _i, modules_2, modulePath, result;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, loadConfig()];
-                case 1:
-                    _config = _a.sent();
-                    console.log('start upload files ');
-                    client = new SftpClient();
-                    return [4 /*yield*/, client.connect({
-                            host: _config.ftp_host,
-                            port: 22,
-                            username: _config.ftp_user,
-                            password: _config.ftp_pw
-                        })];
-                case 2:
-                    _a.sent();
-                    list = ['/view/suppliermngr/MpSupplierInfoMgmtMain.js'];
-                    modules = [];
-                    list.forEach(function (file) {
-                        modules.push(file, file + '.gz', file + '.map');
-                    });
-                    _i = 0, modules_2 = modules;
-                    _a.label = 3;
-                case 3:
-                    if (!(_i < modules_2.length)) return [3 /*break*/, 6];
-                    modulePath = modules_2[_i];
-                    console.log('upload file: ' + modulePath);
-                    return [4 /*yield*/, client.put(path.join(_config.entry, modulePath), _config.remote_entry_script + modulePath)["catch"](function (err) {
-                            console.log('upload file error: ' + err);
-                        })];
-                case 4:
-                    result = _a.sent();
-                    console.log('upload file result: ' + result);
-                    _a.label = 5;
-                case 5:
-                    _i++;
-                    return [3 /*break*/, 3];
-                case 6:
-                    console.log('end upload files ');
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
 function compareVersion(newVersion, oldVersion) {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function () {
@@ -414,4 +374,3 @@ function dateFormat(timestamp) {
         hour12: false
     });
 }
-test();
