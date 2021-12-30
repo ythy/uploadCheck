@@ -4,6 +4,7 @@ import * as path from 'path';
 import { Dirent } from 'fs';
 import { readJsonFile, access, readdir, stat, getFileExtension, copy } from './lib/fileUtils';
 import DBUtils from './lib/DBUtils';
+const SftpClient = require('ssh2-sftp-client');
 
 interface IConfig {
   entry: string; //编译文件夹入口
@@ -14,8 +15,14 @@ interface IConfig {
   database: string;//数据库名
   updateEntry: string;//更新目录入口
   compileEntry: string;//编译目录入口
+  ftp_host:string;
+  ftp_user: string;
+  ftp_pw: string;
+  remote_entry_script: string; //ftp script目录路径
+  remote_entry_jsp: string; //ftp jsp路径
+  local_entry_jsp: string; //本地 jsp路径
 }
-
+ 
 interface IVersion {
   version: string;
   fileList: IFile[];
@@ -26,7 +33,6 @@ interface IFile {
   size: number;
   date: number;
 }
-
 
 const _baseDir = process.cwd();
 const CONFIG_FILE = 'upload_check_config.json';
@@ -61,6 +67,32 @@ export async function insertVersion(version: string) {
       console.log(`error in update jtrac: changedRows < 1`);
     } else {
       console.log(`update jtrac status success: changedRows ( ${result?.changedRows} )`);
+      //开始上传FTP
+      console.log('start upload files ');
+      const client = new SftpClient();
+      await client.connect({
+        host: _config.ftp_host,
+        port: 22,
+        username: _config.ftp_user,
+        password: _config.ftp_pw
+      });
+      let modulesCombined: string[] = [];
+      modules.forEach(originPath => {
+        modulesCombined.push(originPath, originPath + '.gz', originPath + '.map');
+      });
+      for (const modulePath of modulesCombined) {
+        console.log('upload file: ' + modulePath);
+        const result = await client.put(path.join(_config.entry, modulePath),
+          _config.remote_entry_script + modulePath).catch((err: any) => {
+            console.log('upload file error: ' + err);
+          });
+        console.log('upload file result: ' + result);
+      }
+      const jspResult = await client.put(_config.local_entry_jsp, _config.remote_entry_jsp).catch((err: any) => {
+         console.log('upload jsp error: ' + err);
+      });
+      console.log('upload jsp result: ' + jspResult);
+      console.log('end upload files ');
     }
   }).catch(error => {
     dbUtils.close();
@@ -68,7 +100,7 @@ export async function insertVersion(version: string) {
     throw error;
   });
 }
- 
+
 export async function compareVersion(newVersion: string, oldVersion: string) {
   console.log('start compareVersion : ' + `${newVersion} vs ${oldVersion}`);
   _config = await loadConfig();
@@ -165,6 +197,8 @@ export async function copyCompileFiles(version:string) {
 function loadConfig(){
   return readJsonFile<IConfig>(path.resolve(_baseDir, CONFIG_FILE));
 }
+
+ 
 
 async function recordByDir(rootPath: string, dir: Dirent[], data: IFile[]) {
   return new Promise<any>(async (resolve, reject) => {
