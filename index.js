@@ -247,10 +247,10 @@ function copyCompileFiles(version) {
                     _config = _a.sent();
                     dbUtils = new DBUtils_1["default"](_config);
                     dbUtils.getJtracByVersion(version).then(function (jtracFiles) { return __awaiter(_this, void 0, void 0, function () {
-                        var _i, jtracFiles_1, jtrac, filelist, _loop_1, _a, filelist_1, file;
-                        var _b;
-                        return __generator(this, function (_c) {
-                            switch (_c.label) {
+                        var _i, jtracFiles_1, jtrac, filelist, _loop_1, _a, filelist_1, file, _loop_2, _b, _c, fixedFile;
+                        var _d;
+                        return __generator(this, function (_e) {
+                            switch (_e.label) {
                                 case 0:
                                     dbUtils.close();
                                     if (!(jtracFiles === null || jtracFiles === void 0 ? void 0 : jtracFiles.length) || (jtracFiles === null || jtracFiles === void 0 ? void 0 : jtracFiles.length) === 0) {
@@ -258,22 +258,22 @@ function copyCompileFiles(version) {
                                         return [2 /*return*/];
                                     }
                                     _i = 0, jtracFiles_1 = jtracFiles;
-                                    _c.label = 1;
+                                    _e.label = 1;
                                 case 1:
                                     if (!(_i < jtracFiles_1.length)) return [3 /*break*/, 6];
                                     jtrac = jtracFiles_1[_i];
                                     console.log("start copy jtrac: ".concat(jtrac.jtrac_no));
-                                    filelist = (_b = jtrac.file_list) === null || _b === void 0 ? void 0 : _b.split(',');
+                                    filelist = (_d = jtrac.file_list) === null || _d === void 0 ? void 0 : _d.split(',');
                                     _loop_1 = function (file) {
                                         var result;
-                                        return __generator(this, function (_d) {
-                                            switch (_d.label) {
+                                        return __generator(this, function (_f) {
+                                            switch (_f.label) {
                                                 case 0: return [4 /*yield*/, (0, fileUtils_1.copy)(file, _config.updateEntry, _config.compileEntry)["catch"](function (error) {
                                                         console.log("error in copy ".concat(file, ": "), error);
                                                         throw error;
                                                     })];
                                                 case 1:
-                                                    result = _d.sent();
+                                                    result = _f.sent();
                                                     if (result) {
                                                         console.log('copied: ', file);
                                                     }
@@ -282,21 +282,51 @@ function copyCompileFiles(version) {
                                         });
                                     };
                                     _a = 0, filelist_1 = filelist;
-                                    _c.label = 2;
+                                    _e.label = 2;
                                 case 2:
                                     if (!(_a < filelist_1.length)) return [3 /*break*/, 5];
                                     file = filelist_1[_a];
                                     return [5 /*yield**/, _loop_1(file)];
                                 case 3:
-                                    _c.sent();
-                                    _c.label = 4;
+                                    _e.sent();
+                                    _e.label = 4;
                                 case 4:
                                     _a++;
                                     return [3 /*break*/, 2];
                                 case 5:
                                     _i++;
                                     return [3 /*break*/, 1];
-                                case 6: return [2 /*return*/];
+                                case 6:
+                                    _loop_2 = function (fixedFile) {
+                                        var result;
+                                        return __generator(this, function (_g) {
+                                            switch (_g.label) {
+                                                case 0: return [4 /*yield*/, (0, fileUtils_1.copy)(fixedFile, _config.updateEntry, _config.compileEntry)["catch"](function (error) {
+                                                        console.log("error in copy ".concat(fixedFile, ": "), error);
+                                                        throw error;
+                                                    })];
+                                                case 1:
+                                                    result = _g.sent();
+                                                    if (result) {
+                                                        console.log('copied: ', fixedFile);
+                                                    }
+                                                    return [2 /*return*/];
+                                            }
+                                        });
+                                    };
+                                    _b = 0, _c = _config.copiedFiles;
+                                    _e.label = 7;
+                                case 7:
+                                    if (!(_b < _c.length)) return [3 /*break*/, 10];
+                                    fixedFile = _c[_b];
+                                    return [5 /*yield**/, _loop_2(fixedFile)];
+                                case 8:
+                                    _e.sent();
+                                    _e.label = 9;
+                                case 9:
+                                    _b++;
+                                    return [3 /*break*/, 7];
+                                case 10: return [2 /*return*/];
                             }
                         });
                     }); });

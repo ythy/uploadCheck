@@ -21,6 +21,7 @@ interface IConfig {
   remote_entry_script: string; //ftp script目录路径
   remote_entry_jsp: string; //ftp jsp路径
   local_entry_jsp: string; //本地 jsp路径
+  copiedFiles: string[]; //固定要复制的文件
 }
  
 interface IVersion {
@@ -189,6 +190,16 @@ export async function copyCompileFiles(version:string) {
         if (result) {
           console.log('copied: ', file);
         }
+      }
+    }
+
+    for (const fixedFile of _config.copiedFiles) {
+      const result = await copy(fixedFile, _config.updateEntry, _config.compileEntry).catch(error => {
+        console.log(`error in copy ${fixedFile}: `, error);
+        throw error;
+      });
+      if (result) {
+        console.log('copied: ', fixedFile);
       }
     }
   });
