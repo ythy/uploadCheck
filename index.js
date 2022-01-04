@@ -35,6 +35,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 exports.__esModule = true;
 exports.copyCompileFiles = exports.compareLastVersion = exports.compareVersion = exports.insertVersion = void 0;
 var fs = require("fs");
@@ -47,7 +56,7 @@ var CONFIG_FILE = 'upload_check_config.json';
 var _config = {}; //必备参数
 function insertVersion(version) {
     return __awaiter(this, void 0, void 0, function () {
-        var rootFiles, files, dbUtils, compares, modules, oldFileList, newFileList;
+        var rootFiles, files, rootCSSFiles, cssFiles, dbUtils, compares, modules, oldFileList, newFileList;
         var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -60,16 +69,23 @@ function insertVersion(version) {
                 case 2:
                     rootFiles = _a.sent();
                     files = [];
-                    return [4 /*yield*/, recordByDir(path.resolve(_baseDir, _config.entry), rootFiles, files)];
+                    return [4 /*yield*/, (0, fileUtils_1.readdir)(path.resolve(_baseDir, _config.entry_css))];
                 case 3:
+                    rootCSSFiles = _a.sent();
+                    cssFiles = [];
+                    return [4 /*yield*/, recordByDir(path.resolve(_baseDir, _config.entry), rootFiles, files)];
+                case 4:
+                    _a.sent();
+                    return [4 /*yield*/, recordByDir(path.resolve(_baseDir, _config.entry_css), rootCSSFiles, cssFiles)];
+                case 5:
                     _a.sent();
                     dbUtils = new DBUtils_1["default"](_config);
-                    return [4 /*yield*/, dbUtils.addVersion(version, JSON.stringify(files))];
-                case 4:
+                    return [4 /*yield*/, dbUtils.addVersion(version, JSON.stringify(__spreadArray(__spreadArray([], files, true), cssFiles, true)))];
+                case 6:
                     _a.sent();
                     console.log('end insertVersion: ' + version);
                     return [4 /*yield*/, dbUtils.getLastTwoFils()];
-                case 5:
+                case 7:
                     compares = _a.sent();
                     console.log('start compareVersion : ' + "".concat(compares[0].version, " vs ").concat(compares[1].version));
                     modules = [];
@@ -83,14 +99,14 @@ function insertVersion(version) {
                     });
                     console.log('start update modules: ' + modules.join(','));
                     dbUtils.updateJtracTo45(version, modules.join(',')).then(function (result) { return __awaiter(_this, void 0, void 0, function () {
-                        var client, modulesCombined_2, _i, modulesCombined_1, modulePath, result_1, jspResult;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
+                        var client, modulesCombinedJS_2, modulesCombinedCSS_2, _i, modulesCombinedJS_1, modulePath, result_1, _a, modulesCombinedCSS_1, modulePathCSS, resultCSS, jspResult;
+                        return __generator(this, function (_b) {
+                            switch (_b.label) {
                                 case 0:
                                     dbUtils.close();
                                     if (!(!result.changedRows || result.changedRows < 1)) return [3 /*break*/, 1];
                                     console.log("error in update jtrac: changedRows < 1");
-                                    return [3 /*break*/, 8];
+                                    return [3 /*break*/, 12];
                                 case 1:
                                     console.log("update jtrac status success: changedRows ( ".concat(result === null || result === void 0 ? void 0 : result.changedRows, " )"));
                                     //开始上传FTP
@@ -103,37 +119,60 @@ function insertVersion(version) {
                                             password: _config.ftp_pw
                                         })];
                                 case 2:
-                                    _a.sent();
-                                    modulesCombined_2 = [];
+                                    _b.sent();
+                                    modulesCombinedJS_2 = [];
+                                    modulesCombinedCSS_2 = [];
                                     modules.forEach(function (originPath) {
-                                        modulesCombined_2.push(originPath, originPath + '.gz', originPath + '.map');
+                                        if ((0, fileUtils_1.getFileExtension)(originPath) === 'js') {
+                                            modulesCombinedJS_2.push(originPath, originPath + '.gz', originPath + '.map');
+                                        }
+                                        else { //css
+                                            modulesCombinedCSS_2.push(originPath, originPath + '.gz');
+                                        }
                                     });
-                                    _i = 0, modulesCombined_1 = modulesCombined_2;
-                                    _a.label = 3;
+                                    _i = 0, modulesCombinedJS_1 = modulesCombinedJS_2;
+                                    _b.label = 3;
                                 case 3:
-                                    if (!(_i < modulesCombined_1.length)) return [3 /*break*/, 6];
-                                    modulePath = modulesCombined_1[_i];
+                                    if (!(_i < modulesCombinedJS_1.length)) return [3 /*break*/, 6];
+                                    modulePath = modulesCombinedJS_1[_i];
                                     console.log('upload file: ' + modulePath);
                                     return [4 /*yield*/, client.put(path.join(_config.entry, modulePath), _config.remote_entry_script + modulePath)["catch"](function (err) {
                                             console.log('upload file error: ' + err);
                                         })];
                                 case 4:
-                                    result_1 = _a.sent();
+                                    result_1 = _b.sent();
                                     console.log('upload file result: ' + result_1);
-                                    _a.label = 5;
+                                    _b.label = 5;
                                 case 5:
                                     _i++;
                                     return [3 /*break*/, 3];
-                                case 6: return [4 /*yield*/, client.put(_config.local_entry_jsp, _config.remote_entry_jsp)["catch"](function (err) {
+                                case 6:
+                                    _a = 0, modulesCombinedCSS_1 = modulesCombinedCSS_2;
+                                    _b.label = 7;
+                                case 7:
+                                    if (!(_a < modulesCombinedCSS_1.length)) return [3 /*break*/, 10];
+                                    modulePathCSS = modulesCombinedCSS_1[_a];
+                                    console.log('upload css: ' + modulePathCSS);
+                                    return [4 /*yield*/, client.put(path.join(_config.entry_css, modulePathCSS), _config.remote_entry_styles + modulePathCSS)["catch"](function (err) {
+                                            console.log('upload css error: ' + err);
+                                        })];
+                                case 8:
+                                    resultCSS = _b.sent();
+                                    console.log('upload css result: ' + resultCSS);
+                                    _b.label = 9;
+                                case 9:
+                                    _a++;
+                                    return [3 /*break*/, 7];
+                                case 10: return [4 /*yield*/, client.put(_config.local_entry_jsp, _config.remote_entry_jsp)["catch"](function (err) {
                                         console.log('upload jsp error: ' + err);
                                     })];
-                                case 7:
-                                    jspResult = _a.sent();
+                                case 11:
+                                    jspResult = _b.sent();
                                     console.log('upload jsp result: ' + jspResult);
                                     console.log('end upload files ');
                                     client.end();
-                                    _a.label = 8;
-                                case 8: return [2 /*return*/];
+                                    _b.label = 12;
+                                case 12: return [2 /*return*/];
                             }
                         });
                     }); })["catch"](function (error) {

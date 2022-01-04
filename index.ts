@@ -8,6 +8,7 @@ const SftpClient = require('ssh2-sftp-client');
 
 interface IConfig {
   entry: string; //编译文件夹入口
+  entry_css: string; //编译CSS文件夹入口
   extension: string[];//保存记录的文件后缀名
   host: string;//数据库HOST
   user: string;//数据库用户名
@@ -19,8 +20,9 @@ interface IConfig {
   ftp_user: string;
   ftp_pw: string;
   remote_entry_script: string; //ftp script目录路径
+  remote_entry_styles: string; //ftp styles目录路径
   remote_entry_jsp: string; //ftp jsp路径
-  local_entry_jsp: string; //本地 jsp路径
+  local_entry_jsp: string[]; //本地 jsp路径
   copiedFiles: string[]; //固定要复制的文件
 }
  
@@ -42,11 +44,16 @@ let _config = {} as IConfig; //必备参数
 export async function insertVersion(version: string) {
   console.log('start insertVersion: ' + version);
   _config = await loadConfig();
+  
   const rootFiles = await readdir(path.resolve(_baseDir, _config.entry));
   const files: IFile[] = [];
+  const rootCSSFiles = await readdir(path.resolve(_baseDir, _config.entry_css));
+  const cssFiles: IFile[] = [];
   await recordByDir(path.resolve(_baseDir, _config.entry), rootFiles, files);
+  await recordByDir(path.resolve(_baseDir, _config.entry_css), rootCSSFiles, cssFiles);
+
   const dbUtils = new DBUtils(_config);
-  await dbUtils.addVersion(version, JSON.stringify(files));
+  await dbUtils.addVersion(version, JSON.stringify([...files, ...cssFiles]));
   console.log('end insertVersion: ' + version);
 
   const compares = await dbUtils.getLastTwoFils();
@@ -77,11 +84,16 @@ export async function insertVersion(version: string) {
         username: _config.ftp_user,
         password: _config.ftp_pw
       });
-      let modulesCombined: string[] = [];
+      let modulesCombinedJS: string[] = [];
+      let modulesCombinedCSS: string[] = [];
       modules.forEach(originPath => {
-        modulesCombined.push(originPath, originPath + '.gz', originPath + '.map');
+        if (getFileExtension(originPath) === 'js'){
+          modulesCombinedJS.push(originPath, originPath + '.gz', originPath + '.map');
+        }else{//css
+          modulesCombinedCSS.push(originPath, originPath + '.gz');
+        }
       });
-      for (const modulePath of modulesCombined) {
+      for (const modulePath of modulesCombinedJS) {
         console.log('upload file: ' + modulePath);
         const result = await client.put(path.join(_config.entry, modulePath),
           _config.remote_entry_script + modulePath).catch((err: any) => {
@@ -89,10 +101,23 @@ export async function insertVersion(version: string) {
           });
         console.log('upload file result: ' + result);
       }
-      const jspResult = await client.put(_config.local_entry_jsp, _config.remote_entry_jsp).catch((err: any) => {
-         console.log('upload jsp error: ' + err);
-      });
-      console.log('upload jsp result: ' + jspResult);
+      for (const modulePathCSS of modulesCombinedCSS) {
+        console.log('upload css: ' + modulePathCSS);
+        const resultCSS = await client.put(path.join(_config.entry_css, modulePathCSS),
+          _config.remote_entry_styles + modulePathCSS).catch((err: any) => {
+            console.log('upload css error: ' + err);
+          });
+        console.log('upload css result: ' + resultCSS);
+      }
+      const jspList = _config.local_entry_jsp;
+      for (const jspFile of jspList) {
+        console.log('upload jsp: ' + jspFile);
+        const resultJSP = await client.put(jspFile,
+          _config.remote_entry_jsp + path.basename(jspFile)).catch((err: any) => {
+            console.log('upload jsp error: ' + err);
+          });
+        console.log('upload jsp result: ' + resultJSP);
+      }
       console.log('end upload files ');
       client.end();
     }
@@ -225,7 +250,7 @@ async function recordByDir(rootPath: string, dir: Dirent[], data: IFile[]) {
       } else {
         const fileStat = await stat(fileName);
         data.push({
-          name: fileName.substr(path.resolve(_baseDir, _config.entry).length),
+          name: fileName.substr(path.resolve(_baseDir, _config.entry).length),//注意这里_config.entry和_config.entry_css长度一致
           size: fileStat.size,
           date: fileStat.mtimeMs,
         });
