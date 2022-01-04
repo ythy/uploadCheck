@@ -54,14 +54,15 @@ var SftpClient = require('ssh2-sftp-client');
 var _baseDir = process.cwd();
 var CONFIG_FILE = 'upload_check_config.json';
 var _config = {}; //必备参数
-function insertVersion(version) {
+function insertVersion(version, types) {
     return __awaiter(this, void 0, void 0, function () {
-        var rootFiles, files, rootCSSFiles, cssFiles, dbUtils, compares, modules, oldFileList, newFileList;
+        var jspTypes, rootFiles, files, rootCSSFiles, cssFiles, dbUtils, compares, modules, oldFileList, newFileList;
         var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    console.log('start insertVersion: ' + version);
+                    jspTypes = types.split(',');
+                    console.log('start insertVersion: ' + version + ' ,types: ' + types);
                     return [4 /*yield*/, loadConfig()];
                 case 1:
                     _config = _a.sent();
@@ -99,14 +100,14 @@ function insertVersion(version) {
                     });
                     console.log('start update modules: ' + modules.join(','));
                     dbUtils.updateJtracTo45(version, modules.join(',')).then(function (result) { return __awaiter(_this, void 0, void 0, function () {
-                        var client, modulesCombinedJS_2, modulesCombinedCSS_2, _i, modulesCombinedJS_1, modulePath, result_1, _a, modulesCombinedCSS_1, modulePathCSS, resultCSS, jspResult;
-                        return __generator(this, function (_b) {
-                            switch (_b.label) {
+                        var client, modulesCombinedJS_2, modulesCombinedCSS_2, _i, modulesCombinedJS_1, modulePath, result_1, _a, modulesCombinedCSS_1, modulePathCSS, resultCSS, jspList, _b, jspList_1, jspFile, resultJSP;
+                        return __generator(this, function (_c) {
+                            switch (_c.label) {
                                 case 0:
                                     dbUtils.close();
                                     if (!(!result.changedRows || result.changedRows < 1)) return [3 /*break*/, 1];
                                     console.log("error in update jtrac: changedRows < 1");
-                                    return [3 /*break*/, 12];
+                                    return [3 /*break*/, 15];
                                 case 1:
                                     console.log("update jtrac status success: changedRows ( ".concat(result === null || result === void 0 ? void 0 : result.changedRows, " )"));
                                     //开始上传FTP
@@ -119,7 +120,7 @@ function insertVersion(version) {
                                             password: _config.ftp_pw
                                         })];
                                 case 2:
-                                    _b.sent();
+                                    _c.sent();
                                     modulesCombinedJS_2 = [];
                                     modulesCombinedCSS_2 = [];
                                     modules.forEach(function (originPath) {
@@ -131,7 +132,7 @@ function insertVersion(version) {
                                         }
                                     });
                                     _i = 0, modulesCombinedJS_1 = modulesCombinedJS_2;
-                                    _b.label = 3;
+                                    _c.label = 3;
                                 case 3:
                                     if (!(_i < modulesCombinedJS_1.length)) return [3 /*break*/, 6];
                                     modulePath = modulesCombinedJS_1[_i];
@@ -140,15 +141,15 @@ function insertVersion(version) {
                                             console.log('upload file error: ' + err);
                                         })];
                                 case 4:
-                                    result_1 = _b.sent();
+                                    result_1 = _c.sent();
                                     console.log('upload file result: ' + result_1);
-                                    _b.label = 5;
+                                    _c.label = 5;
                                 case 5:
                                     _i++;
                                     return [3 /*break*/, 3];
                                 case 6:
                                     _a = 0, modulesCombinedCSS_1 = modulesCombinedCSS_2;
-                                    _b.label = 7;
+                                    _c.label = 7;
                                 case 7:
                                     if (!(_a < modulesCombinedCSS_1.length)) return [3 /*break*/, 10];
                                     modulePathCSS = modulesCombinedCSS_1[_a];
@@ -157,22 +158,37 @@ function insertVersion(version) {
                                             console.log('upload css error: ' + err);
                                         })];
                                 case 8:
-                                    resultCSS = _b.sent();
+                                    resultCSS = _c.sent();
                                     console.log('upload css result: ' + resultCSS);
-                                    _b.label = 9;
+                                    _c.label = 9;
                                 case 9:
                                     _a++;
                                     return [3 /*break*/, 7];
-                                case 10: return [4 /*yield*/, client.put(_config.local_entry_jsp, _config.remote_entry_jsp)["catch"](function (err) {
-                                        console.log('upload jsp error: ' + err);
-                                    })];
+                                case 10:
+                                    jspList = _config.local_entry_jsp.filter(function (_, i) {
+                                        return jspTypes.includes(String(i));
+                                    });
+                                    _b = 0, jspList_1 = jspList;
+                                    _c.label = 11;
                                 case 11:
-                                    jspResult = _b.sent();
-                                    console.log('upload jsp result: ' + jspResult);
+                                    if (!(_b < jspList_1.length)) return [3 /*break*/, 14];
+                                    jspFile = jspList_1[_b];
+                                    console.log('upload jsp: ' + jspFile);
+                                    return [4 /*yield*/, client.put(jspFile, _config.remote_entry_jsp + path.basename(jspFile))["catch"](function (err) {
+                                            console.log('upload jsp error: ' + err);
+                                        })];
+                                case 12:
+                                    resultJSP = _c.sent();
+                                    console.log('upload jsp result: ' + resultJSP);
+                                    _c.label = 13;
+                                case 13:
+                                    _b++;
+                                    return [3 /*break*/, 11];
+                                case 14:
                                     console.log('end upload files ');
                                     client.end();
-                                    _b.label = 12;
-                                case 12: return [2 /*return*/];
+                                    _c.label = 15;
+                                case 15: return [2 /*return*/];
                             }
                         });
                     }); })["catch"](function (error) {

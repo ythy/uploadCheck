@@ -41,8 +41,9 @@ const _baseDir = process.cwd();
 const CONFIG_FILE = 'upload_check_config.json';
 let _config = {} as IConfig; //必备参数
 
-export async function insertVersion(version: string) {
-  console.log('start insertVersion: ' + version);
+export async function insertVersion(version: string, types: string) {
+  const jspTypes = types.split(',');
+  console.log('start insertVersion: ' + version + ' ,types: ' + types);
   _config = await loadConfig();
   
   const rootFiles = await readdir(path.resolve(_baseDir, _config.entry));
@@ -109,7 +110,9 @@ export async function insertVersion(version: string) {
           });
         console.log('upload css result: ' + resultCSS);
       }
-      const jspList = _config.local_entry_jsp;
+      const jspList = _config.local_entry_jsp.filter((_, i)=>{
+        return jspTypes.includes(String(i));
+      });
       for (const jspFile of jspList) {
         console.log('upload jsp: ' + jspFile);
         const resultJSP = await client.put(jspFile,

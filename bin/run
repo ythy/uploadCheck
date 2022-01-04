@@ -10,12 +10,13 @@ program
   .option('-d, --oldVersion <oldVersion>', 'compare version old')
   .option('-l, --last', 'compare last two version')
   .option('-c, --copy <version>', 'copy jtrac files')
+  .option('-t, --types <types>', 'main jsp')
   .parse(process.argv);
 
 const options = program.opts();
 
-if (options.insert && options.insert !== true){
-  commander.insertVersion(options.insert);
+if (options.insert && options.types){
+  commander.insertVersion(options.insert, options.types);
 }
 
 if (options.newVersion && options.oldVersion){
