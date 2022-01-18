@@ -2,7 +2,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Dirent } from 'fs';
-import { readJsonFile, access, readdir, stat, getFileExtension, copy } from './lib/fileUtils';
+import { readJsonFile, access, readdir, stat, getFileExtension, copy, mkdir, readTxtFile } from './lib/fileUtils';
 import DBUtils from './lib/DBUtils';
 const SftpClient = require('ssh2-sftp-client');
 
@@ -25,11 +25,23 @@ interface IConfig {
   local_entry_jsp: string[]; //本地 jsp路径
   copiedFiles: string[]; //固定要复制的文件
 }
- 
-interface IVersion {
-  version: string;
-  fileList: IFile[];
+
+interface IDCConfig {
+  entry: string; //IDC上传操作目录
+  file_list: string; //需要上传的文件列表
+  ftp_host_test: string;
+  ftp_user_test: string;
+  ftp_pw_test: string;
+  ftp_host_idc_node1: string;
+  ftp_user_idc_node1: string;
+  ftp_pw_idc_node1: string;
+  ftp_host_idc_node2: string;
+  ftp_user_idc_node2: string;
+  ftp_pw_idc_node2: string;
+  remote_entry_test: string;
+  remote_entry_idc: string;
 }
+
 
 interface IFile {
   name: string;
@@ -39,7 +51,9 @@ interface IFile {
 
 const _baseDir = process.cwd();
 const CONFIG_FILE = 'upload_check_config.json';
+const IDC_CONFIG_FILE = 'upload_idc_config.json';
 let _config = {} as IConfig; //必备参数
+let _IDCConfig = {} as IDCConfig; //必备参数
 
 export async function insertVersion(version: string, types: string) {
   const jspTypes = types.split(',');
@@ -233,12 +247,152 @@ export async function copyCompileFiles(version:string) {
   });
 }
 
+export async function uploadIDC(){
+  _IDCConfig = await loadConfig<IDCConfig>(IDC_CONFIG_FILE);
+  const fileText = await readTxtFile(path.resolve(_IDCConfig.file_list))
+  if (!fileText){
+    log('error in read file list', 'red');
+    return;
+  }
+  const fileList = fileText.replace(/\r/g, '').split('\n');
+  const uploadEntry = path.resolve(_IDCConfig.entry, 'work', dateFormat(new Date().getTime()).replace(/:/g, '-'));
+  const idcRoot = path.resolve(uploadEntry, 'backup');
+  const testRoot = path.resolve(uploadEntry, 'upload');
+  await mkdir(idcRoot);
+  await mkdir(testRoot);
 
-function loadConfig(){
-  return readJsonFile<IConfig>(path.resolve(_baseDir, CONFIG_FILE));
+  fileList.forEach((file, index)=>{
+    const ext = getFileExtension(file);
+    if (ext === 'js') {
+      fileList[index] = '/static/mp/script/' + file;
+      fileList.push(fileList[index] + '.gz', fileList[index] + '.map');
+    } else if (ext === 'css') {//css
+      fileList[index] = '/static/mp/styles/' + file;
+      fileList.push(fileList[index] + '.gz');
+    }
+  })
+
+  //开始备份
+  log('start backup idc', 'yellow');
+  const clientBackup = new SftpClient();
+  await clientBackup.connect({
+    host: _IDCConfig.ftp_host_idc_node1,
+    port: 22,
+    username: _IDCConfig.ftp_user_idc_node1,
+    password: _IDCConfig.ftp_pw_idc_node1
+  });
+  
+  for (const uploadFile of fileList) {
+    const remoteFile = _IDCConfig.remote_entry_idc + uploadFile;
+    const localFile = path.join(idcRoot, uploadFile);
+    await mkdir(path.dirname(localFile));
+    const writeStream = fs.createWriteStream(localFile);
+    const result = await clientBackup.get(remoteFile, writeStream).catch((err: any) => {
+      log('download idc error: ' + err, 'red');
+    });
+    if (result){
+      log('download idc success: ' + remoteFile, 'green');
+    }
+   
+  }
+  log('end backup idc', 'yellow');
+  clientBackup.end();
+  //备份结束
+  log('---------------------------------------------------------', 'cyan');
+  log('---------------------------------------------------------', 'cyan');
+  //开始下载待传文件
+  log('start download files from test server', 'yellow');
+  const clientTest = new SftpClient();
+  await clientTest.connect({
+    host: _IDCConfig.ftp_host_test,
+    port: 22,
+    username: _IDCConfig.ftp_user_test,
+    password: _IDCConfig.ftp_pw_test
+  });
+
+  for (const downloadFile of fileList) {
+    const remoteFile = _IDCConfig.remote_entry_test + downloadFile;
+    const localFile = path.join(testRoot, downloadFile);
+    await mkdir(path.dirname(localFile));
+    const writeStream = fs.createWriteStream(localFile);
+    const result = await clientTest.get(remoteFile, writeStream).catch((err: any) => {
+      log('download test error: ' + err, 'red');
+    });
+    if (result) {
+      log('download test success: ' + remoteFile, 'green');
+    }
+
+  }
+  log('end download files from test server', 'yellow');
+  clientTest.end();
+  //下载待传文件结束
+  log('---------------------------------------------------------', 'cyan');
+  log('---------------------------------------------------------', 'cyan');
+  //开始上传
+  log('start upload files to node1', 'yellow');
+  const clientNode1 = new SftpClient();
+  await clientNode1.connect({
+    host: _IDCConfig.ftp_host_idc_node1,
+    port: 22,
+    username: _IDCConfig.ftp_user_idc_node1,
+    password: _IDCConfig.ftp_pw_idc_node1
+  });
+  for (const uploadFile1 of fileList) {
+    const remoteFile = _IDCConfig.remote_entry_idc + uploadFile1;
+    const localFile = path.join(testRoot, uploadFile1);
+    const result = await clientNode1.put(localFile, remoteFile).catch((err: any) => {
+      log('upload node1 error: ' + err, 'red');
+    });
+    if (result) {
+      log('upload node1 success: ' + remoteFile, 'green');
+    }
+  }
+  log('end upload files to node1', 'yellow');
+  clientNode1.end();
+  log('---------------------------------------------------------', 'cyan');
+  log('---------------------------------------------------------', 'cyan');
+  log('start upload files to node2', 'yellow');
+  const clientNode2 = new SftpClient();
+  await clientNode2.connect({
+    host: _IDCConfig.ftp_host_idc_node2,
+    port: 22,
+    username: _IDCConfig.ftp_user_idc_node2,
+    password: _IDCConfig.ftp_pw_idc_node2
+  });
+  for (const uploadFile2 of fileList) {
+    const remoteFile = _IDCConfig.remote_entry_idc + uploadFile2;
+    const localFile = path.join(testRoot, uploadFile2);
+    const result = await clientNode2.put(localFile, remoteFile).catch((err: any) => {
+      log('upload node2 error: ' + err, 'red');
+    });
+    if (result) {
+      log('upload node2 success: ' + remoteFile, 'green');
+    }
+  }
+  log('end upload files to node2', 'yellow');
+  clientNode2.end();
+  //上传结束
 }
 
- 
+function log(info: string, color: 'green' | 'red' | 'yellow' | 'blue' | 'cyan' | 'normal' = 'normal') {
+  if (color === 'normal') {
+    console.log(info)
+  } else if (color === 'red') {
+    console.log('\x1b[31m%s\x1b[0m', info)
+  } else if (color === 'green') {
+    console.log('\x1b[32m%s\x1b[0m', info)
+  } else if (color === 'yellow') {
+    console.log('\x1b[33m%s\x1b[0m', info)
+  } else if (color === 'blue') {
+    console.log('\x1b[34m%s\x1b[0m', info)
+  } else if (color === 'cyan') {
+    console.log('\x1b[36m%s\x1b[0m', info)
+  }
+}
+
+function loadConfig<T = IConfig>(file = CONFIG_FILE) {
+  return readJsonFile<T>(path.resolve(_baseDir, file));
+}
 
 async function recordByDir(rootPath: string, dir: Dirent[], data: IFile[]) {
   return new Promise<any>(async (resolve, reject) => {

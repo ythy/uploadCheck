@@ -11,6 +11,7 @@ program
   .option('-l, --last', 'compare last two version')
   .option('-c, --copy <version>', 'copy jtrac files')
   .option('-t, --types <types>', 'main jsp')
+  .option('-u, --upload', 'upload idc')
   .parse(process.argv);
 
 const options = program.opts();
@@ -29,4 +30,8 @@ if (options.last){
 
 if (options.copy && options.copy !== true){
   commander.copyCompileFiles(options.copy);
+}
+
+if (options.upload){
+  commander.uploadIDC();
 }

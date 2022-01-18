@@ -57,10 +57,22 @@ export function readdir(path: string) {
   });
 }
 
-export function copy(pathInput: string, fromDir:string, toDir:string){
+export function mkdir(path: string){
+  return new Promise<boolean>((resolve, reject) => {
+    fs.mkdir(path, { recursive: true }, (err) => {
+      if (err){
+        reject(err)
+      }
+      resolve(true);
+    });
+  });
+}
+
+
+export function copy(pathInput: string, fromDir: string, toDir: string) {
   return new Promise<boolean>((resolve, reject) => {
     fs.mkdir(path.dirname(path.resolve(toDir, pathInput)), { recursive: true }, (err) => {
-      if (err){
+      if (err) {
         reject(err)
       }
       fs.copyFile(path.resolve(fromDir, pathInput), path.resolve(toDir, pathInput), (err) => {
@@ -73,3 +85,14 @@ export function copy(pathInput: string, fromDir:string, toDir:string){
   });
 }
 
+export function readTxtFile(path: string) {
+  return new Promise<string>((resolve, reject) => {
+    fs.readFile(path, 'utf8', (err, data) => {
+      if (err) {
+        console.error('ReadTxtFile Error: ' + err);
+        reject(err)
+      }
+      resolve(data);
+    })
+  });
+}

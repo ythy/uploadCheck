@@ -45,7 +45,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 exports.__esModule = true;
-exports.copyCompileFiles = exports.compareLastVersion = exports.compareVersion = exports.insertVersion = void 0;
+exports.uploadIDC = exports.copyCompileFiles = exports.compareLastVersion = exports.compareVersion = exports.insertVersion = void 0;
 var fs = require("fs");
 var path = require("path");
 var fileUtils_1 = require("./lib/fileUtils");
@@ -53,7 +53,9 @@ var DBUtils_1 = require("./lib/DBUtils");
 var SftpClient = require('ssh2-sftp-client');
 var _baseDir = process.cwd();
 var CONFIG_FILE = 'upload_check_config.json';
+var IDC_CONFIG_FILE = 'upload_idc_config.json';
 var _config = {}; //必备参数
+var _IDCConfig = {}; //必备参数
 function insertVersion(version, types) {
     return __awaiter(this, void 0, void 0, function () {
         var jspTypes, rootFiles, files, rootCSSFiles, cssFiles, dbUtils, compares, modules, oldFileList, newFileList;
@@ -391,8 +393,219 @@ function copyCompileFiles(version) {
     });
 }
 exports.copyCompileFiles = copyCompileFiles;
-function loadConfig() {
-    return (0, fileUtils_1.readJsonFile)(path.resolve(_baseDir, CONFIG_FILE));
+function uploadIDC() {
+    return __awaiter(this, void 0, void 0, function () {
+        var fileText, fileList, uploadEntry, idcRoot, testRoot, clientBackup, _i, fileList_1, uploadFile, remoteFile, localFile, writeStream, result, clientTest, _a, fileList_2, downloadFile, remoteFile, localFile, writeStream, result, clientNode1, _b, fileList_3, uploadFile1, remoteFile, localFile, result, clientNode2, _c, fileList_4, uploadFile2, remoteFile, localFile, result;
+        return __generator(this, function (_d) {
+            switch (_d.label) {
+                case 0: return [4 /*yield*/, loadConfig(IDC_CONFIG_FILE)];
+                case 1:
+                    _IDCConfig = _d.sent();
+                    return [4 /*yield*/, (0, fileUtils_1.readTxtFile)(path.resolve(_IDCConfig.file_list))];
+                case 2:
+                    fileText = _d.sent();
+                    if (!fileText) {
+                        log('error in read file list', 'red');
+                        return [2 /*return*/];
+                    }
+                    fileList = fileText.replace(/\r/g, '').split('\n');
+                    uploadEntry = path.resolve(_IDCConfig.entry, 'work', dateFormat(new Date().getTime()).replace(/:/g, '-'));
+                    idcRoot = path.resolve(uploadEntry, 'backup');
+                    testRoot = path.resolve(uploadEntry, 'upload');
+                    return [4 /*yield*/, (0, fileUtils_1.mkdir)(idcRoot)];
+                case 3:
+                    _d.sent();
+                    return [4 /*yield*/, (0, fileUtils_1.mkdir)(testRoot)];
+                case 4:
+                    _d.sent();
+                    fileList.forEach(function (file, index) {
+                        var ext = (0, fileUtils_1.getFileExtension)(file);
+                        if (ext === 'js') {
+                            fileList[index] = '/static/mp/script/' + file;
+                            fileList.push(fileList[index] + '.gz', fileList[index] + '.map');
+                        }
+                        else if (ext === 'css') { //css
+                            fileList[index] = '/static/mp/styles/' + file;
+                            fileList.push(fileList[index] + '.gz');
+                        }
+                    });
+                    //开始备份
+                    log('start backup idc', 'yellow');
+                    clientBackup = new SftpClient();
+                    return [4 /*yield*/, clientBackup.connect({
+                            host: _IDCConfig.ftp_host_idc_node1,
+                            port: 22,
+                            username: _IDCConfig.ftp_user_idc_node1,
+                            password: _IDCConfig.ftp_pw_idc_node1
+                        })];
+                case 5:
+                    _d.sent();
+                    _i = 0, fileList_1 = fileList;
+                    _d.label = 6;
+                case 6:
+                    if (!(_i < fileList_1.length)) return [3 /*break*/, 10];
+                    uploadFile = fileList_1[_i];
+                    remoteFile = _IDCConfig.remote_entry_idc + uploadFile;
+                    localFile = path.join(idcRoot, uploadFile);
+                    return [4 /*yield*/, (0, fileUtils_1.mkdir)(path.dirname(localFile))];
+                case 7:
+                    _d.sent();
+                    writeStream = fs.createWriteStream(localFile);
+                    return [4 /*yield*/, clientBackup.get(remoteFile, writeStream)["catch"](function (err) {
+                            log('download idc error: ' + err, 'red');
+                        })];
+                case 8:
+                    result = _d.sent();
+                    if (result) {
+                        log('download idc success: ' + remoteFile, 'green');
+                    }
+                    _d.label = 9;
+                case 9:
+                    _i++;
+                    return [3 /*break*/, 6];
+                case 10:
+                    log('end backup idc', 'yellow');
+                    clientBackup.end();
+                    //备份结束
+                    log('---------------------------------------------------------', 'cyan');
+                    log('---------------------------------------------------------', 'cyan');
+                    //开始下载待传文件
+                    log('start download files from test server', 'yellow');
+                    clientTest = new SftpClient();
+                    return [4 /*yield*/, clientTest.connect({
+                            host: _IDCConfig.ftp_host_test,
+                            port: 22,
+                            username: _IDCConfig.ftp_user_test,
+                            password: _IDCConfig.ftp_pw_test
+                        })];
+                case 11:
+                    _d.sent();
+                    _a = 0, fileList_2 = fileList;
+                    _d.label = 12;
+                case 12:
+                    if (!(_a < fileList_2.length)) return [3 /*break*/, 16];
+                    downloadFile = fileList_2[_a];
+                    remoteFile = _IDCConfig.remote_entry_test + downloadFile;
+                    localFile = path.join(testRoot, downloadFile);
+                    return [4 /*yield*/, (0, fileUtils_1.mkdir)(path.dirname(localFile))];
+                case 13:
+                    _d.sent();
+                    writeStream = fs.createWriteStream(localFile);
+                    return [4 /*yield*/, clientTest.get(remoteFile, writeStream)["catch"](function (err) {
+                            log('download test error: ' + err, 'red');
+                        })];
+                case 14:
+                    result = _d.sent();
+                    if (result) {
+                        log('download test success: ' + remoteFile, 'green');
+                    }
+                    _d.label = 15;
+                case 15:
+                    _a++;
+                    return [3 /*break*/, 12];
+                case 16:
+                    log('end download files from test server', 'yellow');
+                    clientTest.end();
+                    //下载待传文件结束
+                    log('---------------------------------------------------------', 'cyan');
+                    log('---------------------------------------------------------', 'cyan');
+                    //开始上传
+                    log('start upload files to node1', 'yellow');
+                    clientNode1 = new SftpClient();
+                    return [4 /*yield*/, clientNode1.connect({
+                            host: _IDCConfig.ftp_host_idc_node1,
+                            port: 22,
+                            username: _IDCConfig.ftp_user_idc_node1,
+                            password: _IDCConfig.ftp_pw_idc_node1
+                        })];
+                case 17:
+                    _d.sent();
+                    _b = 0, fileList_3 = fileList;
+                    _d.label = 18;
+                case 18:
+                    if (!(_b < fileList_3.length)) return [3 /*break*/, 21];
+                    uploadFile1 = fileList_3[_b];
+                    remoteFile = _IDCConfig.remote_entry_idc + uploadFile1;
+                    localFile = path.join(testRoot, uploadFile1);
+                    return [4 /*yield*/, clientNode1.put(localFile, remoteFile)["catch"](function (err) {
+                            log('upload node1 error: ' + err, 'red');
+                        })];
+                case 19:
+                    result = _d.sent();
+                    if (result) {
+                        log('upload node1 success: ' + remoteFile, 'green');
+                    }
+                    _d.label = 20;
+                case 20:
+                    _b++;
+                    return [3 /*break*/, 18];
+                case 21:
+                    log('end upload files to node1', 'yellow');
+                    clientNode1.end();
+                    log('---------------------------------------------------------', 'cyan');
+                    log('---------------------------------------------------------', 'cyan');
+                    log('start upload files to node2', 'yellow');
+                    clientNode2 = new SftpClient();
+                    return [4 /*yield*/, clientNode2.connect({
+                            host: _IDCConfig.ftp_host_idc_node2,
+                            port: 22,
+                            username: _IDCConfig.ftp_user_idc_node2,
+                            password: _IDCConfig.ftp_pw_idc_node2
+                        })];
+                case 22:
+                    _d.sent();
+                    _c = 0, fileList_4 = fileList;
+                    _d.label = 23;
+                case 23:
+                    if (!(_c < fileList_4.length)) return [3 /*break*/, 26];
+                    uploadFile2 = fileList_4[_c];
+                    remoteFile = _IDCConfig.remote_entry_idc + uploadFile2;
+                    localFile = path.join(testRoot, uploadFile2);
+                    return [4 /*yield*/, clientNode2.put(localFile, remoteFile)["catch"](function (err) {
+                            log('upload node2 error: ' + err, 'red');
+                        })];
+                case 24:
+                    result = _d.sent();
+                    if (result) {
+                        log('upload node2 success: ' + remoteFile, 'green');
+                    }
+                    _d.label = 25;
+                case 25:
+                    _c++;
+                    return [3 /*break*/, 23];
+                case 26:
+                    log('end upload files to node2', 'yellow');
+                    clientNode2.end();
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.uploadIDC = uploadIDC;
+function log(info, color) {
+    if (color === void 0) { color = 'normal'; }
+    if (color === 'normal') {
+        console.log(info);
+    }
+    else if (color === 'red') {
+        console.log('\x1b[31m%s\x1b[0m', info);
+    }
+    else if (color === 'green') {
+        console.log('\x1b[32m%s\x1b[0m', info);
+    }
+    else if (color === 'yellow') {
+        console.log('\x1b[33m%s\x1b[0m', info);
+    }
+    else if (color === 'blue') {
+        console.log('\x1b[34m%s\x1b[0m', info);
+    }
+    else if (color === 'cyan') {
+        console.log('\x1b[36m%s\x1b[0m', info);
+    }
+}
+function loadConfig(file) {
+    if (file === void 0) { file = CONFIG_FILE; }
+    return (0, fileUtils_1.readJsonFile)(path.resolve(_baseDir, file));
 }
 function recordByDir(rootPath, dir, data) {
     return __awaiter(this, void 0, void 0, function () {
