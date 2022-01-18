@@ -597,7 +597,7 @@ function uploadIDCCheck() {
                         log('error in read file list', 'red');
                         return [2 /*return*/];
                     }
-                    log(fileText, 'cyan');
+                    log(fileText, 'yellow');
                     return [2 /*return*/];
             }
         });

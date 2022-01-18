@@ -381,7 +381,7 @@ export async function uploadIDCCheck() {
     log('error in read file list', 'red');
     return;
   }
-  log(fileText, 'cyan');
+  log(fileText, 'yellow');
 }
 
 function log(info: string, color: 'green' | 'red' | 'yellow' | 'blue' | 'cyan' | 'normal' = 'normal') {
