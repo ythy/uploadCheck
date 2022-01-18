@@ -12,6 +12,7 @@ program
   .option('-c, --copy <version>', 'copy jtrac files')
   .option('-t, --types <types>', 'main jsp')
   .option('-u, --upload', 'upload idc')
+  .option('-chk, --check', 'upload idc check')
   .parse(process.argv);
 
 const options = program.opts();
@@ -35,3 +36,9 @@ if (options.copy && options.copy !== true){
 if (options.upload){
   commander.uploadIDC();
 }
+
+if (options.check){
+  commander.uploadIDCCheck();
+}
+
+

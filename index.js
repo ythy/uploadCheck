@@ -45,7 +45,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 exports.__esModule = true;
-exports.uploadIDC = exports.copyCompileFiles = exports.compareLastVersion = exports.compareVersion = exports.insertVersion = void 0;
+exports.uploadIDCCheck = exports.uploadIDC = exports.copyCompileFiles = exports.compareLastVersion = exports.compareVersion = exports.insertVersion = void 0;
 var fs = require("fs");
 var path = require("path");
 var fileUtils_1 = require("./lib/fileUtils");
@@ -582,6 +582,28 @@ function uploadIDC() {
     });
 }
 exports.uploadIDC = uploadIDC;
+function uploadIDCCheck() {
+    return __awaiter(this, void 0, void 0, function () {
+        var fileText;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, loadConfig(IDC_CONFIG_FILE)];
+                case 1:
+                    _IDCConfig = _a.sent();
+                    return [4 /*yield*/, (0, fileUtils_1.readTxtFile)(path.resolve(_IDCConfig.file_list))];
+                case 2:
+                    fileText = _a.sent();
+                    if (!fileText) {
+                        log('error in read file list', 'red');
+                        return [2 /*return*/];
+                    }
+                    log(fileText, 'cyan');
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.uploadIDCCheck = uploadIDCCheck;
 function log(info, color) {
     if (color === void 0) { color = 'normal'; }
     if (color === 'normal') {

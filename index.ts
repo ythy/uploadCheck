@@ -374,6 +374,16 @@ export async function uploadIDC(){
   //上传结束
 }
 
+export async function uploadIDCCheck() {
+  _IDCConfig = await loadConfig<IDCConfig>(IDC_CONFIG_FILE);
+  const fileText = await readTxtFile(path.resolve(_IDCConfig.file_list))
+  if (!fileText) {
+    log('error in read file list', 'red');
+    return;
+  }
+  log(fileText, 'cyan');
+}
+
 function log(info: string, color: 'green' | 'red' | 'yellow' | 'blue' | 'cyan' | 'normal' = 'normal') {
   if (color === 'normal') {
     console.log(info)
