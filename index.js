@@ -50,12 +50,13 @@ var fs = require("fs");
 var path = require("path");
 var fileUtils_1 = require("./lib/fileUtils");
 var DBUtils_1 = require("./lib/DBUtils");
-var SftpClient = require('ssh2-sftp-client');
+var SftpClient = require("ssh2-sftp-client");
 var _baseDir = process.cwd();
-var CONFIG_FILE = 'upload_check_config.json';
-var IDC_CONFIG_FILE = 'upload_idc_config.json';
+var CONFIG_FILE = "upload_check_config.json";
+var IDC_CONFIG_FILE = "upload_idc_config.json";
 var _config = {}; //必备参数
 var _IDCConfig = {}; //必备参数
+var _ftp = {}; //必备参数
 function insertVersion(version, types) {
     return __awaiter(this, void 0, void 0, function () {
         var jspTypes, rootFiles, files, rootCSSFiles, cssFiles, dbUtils, compares, modules, oldFileList, newFileList;
@@ -63,45 +64,51 @@ function insertVersion(version, types) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    jspTypes = types.split(',');
-                    console.log('start insertVersion: ' + version + ' ,types: ' + types);
+                    jspTypes = types.split(",");
+                    console.log("start insertVersion: " + version + " ,types: " + types);
                     return [4 /*yield*/, loadConfig()];
                 case 1:
                     _config = _a.sent();
-                    return [4 /*yield*/, (0, fileUtils_1.readdir)(path.resolve(_baseDir, _config.entry))];
+                    return [4 /*yield*/, loadAbsoluteConfig(_config.ftp_store)];
                 case 2:
+                    _ftp = _a.sent();
+                    return [4 /*yield*/, (0, fileUtils_1.readdir)(path.resolve(_baseDir, _config.entry))];
+                case 3:
                     rootFiles = _a.sent();
                     files = [];
                     return [4 /*yield*/, (0, fileUtils_1.readdir)(path.resolve(_baseDir, _config.entry_css))];
-                case 3:
+                case 4:
                     rootCSSFiles = _a.sent();
                     cssFiles = [];
                     return [4 /*yield*/, recordByDir(path.resolve(_baseDir, _config.entry), rootFiles, files)];
-                case 4:
+                case 5:
                     _a.sent();
                     return [4 /*yield*/, recordByDir(path.resolve(_baseDir, _config.entry_css), rootCSSFiles, cssFiles)];
-                case 5:
+                case 6:
                     _a.sent();
                     dbUtils = new DBUtils_1["default"](_config);
                     return [4 /*yield*/, dbUtils.addVersion(version, JSON.stringify(__spreadArray(__spreadArray([], files, true), cssFiles, true)))];
-                case 6:
-                    _a.sent();
-                    console.log('end insertVersion: ' + version);
-                    return [4 /*yield*/, dbUtils.getLastTwoFils()];
                 case 7:
+                    _a.sent();
+                    console.log("end insertVersion: " + version);
+                    return [4 /*yield*/, dbUtils.getLastTwoFils()];
+                case 8:
                     compares = _a.sent();
-                    console.log('start compareVersion : ' + "".concat(compares[0].version, " vs ").concat(compares[1].version));
+                    console.log("start compareVersion : " +
+                        "".concat(compares[0].version, " vs ").concat(compares[1].version));
                     modules = [];
                     oldFileList = JSON.parse(compares[1].files);
                     newFileList = JSON.parse(compares[0].files);
                     newFileList.forEach(function (file) {
                         var old = oldFileList.find(function (f) { return f.name === file.name; });
                         if (!old || (old && old.date !== file.date)) {
-                            modules.push(file.name.split('\\').join('/'));
+                            modules.push(file.name.split("\\").join("/"));
                         }
                     });
-                    console.log('start update modules: ' + modules.join(','));
-                    dbUtils.updateJtracTo45(version, modules.join(',')).then(function (result) { return __awaiter(_this, void 0, void 0, function () {
+                    console.log("start update modules: " + modules.join(","));
+                    dbUtils
+                        .updateJtracTo45(version, modules.join(","))
+                        .then(function (result) { return __awaiter(_this, void 0, void 0, function () {
                         var client, modulesCombinedJS_2, modulesCombinedCSS_2, _i, modulesCombinedJS_1, modulePath, result_1, _a, modulesCombinedCSS_1, modulePathCSS, resultCSS, jspList, _b, jspList_1, jspFile, resultJSP;
                         return __generator(this, function (_c) {
                             switch (_c.label) {
@@ -113,24 +120,25 @@ function insertVersion(version, types) {
                                 case 1:
                                     console.log("update jtrac status success: changedRows ( ".concat(result === null || result === void 0 ? void 0 : result.changedRows, " )"));
                                     //开始上传FTP
-                                    console.log('start upload files ');
+                                    console.log("start upload files ");
                                     client = new SftpClient();
                                     return [4 /*yield*/, client.connect({
-                                            host: _config.ftp_host,
+                                            host: _ftp.ftp_host_test,
                                             port: 22,
-                                            username: _config.ftp_user,
-                                            password: _config.ftp_pw
+                                            username: _ftp.ftp_user_test,
+                                            password: _ftp.ftp_pw_test
                                         })];
                                 case 2:
                                     _c.sent();
                                     modulesCombinedJS_2 = [];
                                     modulesCombinedCSS_2 = [];
                                     modules.forEach(function (originPath) {
-                                        if ((0, fileUtils_1.getFileExtension)(originPath) === 'js') {
-                                            modulesCombinedJS_2.push(originPath, originPath + '.gz', originPath + '.map');
+                                        if ((0, fileUtils_1.getFileExtension)(originPath) === "js") {
+                                            modulesCombinedJS_2.push(originPath, originPath + ".gz", originPath + ".map");
                                         }
-                                        else { //css
-                                            modulesCombinedCSS_2.push(originPath, originPath + '.gz');
+                                        else {
+                                            //css
+                                            modulesCombinedCSS_2.push(originPath, originPath + ".gz");
                                         }
                                     });
                                     _i = 0, modulesCombinedJS_1 = modulesCombinedJS_2;
@@ -138,13 +146,14 @@ function insertVersion(version, types) {
                                 case 3:
                                     if (!(_i < modulesCombinedJS_1.length)) return [3 /*break*/, 6];
                                     modulePath = modulesCombinedJS_1[_i];
-                                    console.log('upload file: ' + modulePath);
-                                    return [4 /*yield*/, client.put(path.join(_config.entry, modulePath), _config.remote_entry_script + modulePath)["catch"](function (err) {
-                                            console.log('upload file error: ' + err);
+                                    console.log("upload file: " + modulePath);
+                                    return [4 /*yield*/, client
+                                            .put(path.join(_config.entry, modulePath), _config.remote_entry_script + modulePath)["catch"](function (err) {
+                                            console.log("upload file error: " + err);
                                         })];
                                 case 4:
                                     result_1 = _c.sent();
-                                    console.log('upload file result: ' + result_1);
+                                    console.log("upload file result: " + result_1);
                                     _c.label = 5;
                                 case 5:
                                     _i++;
@@ -155,13 +164,14 @@ function insertVersion(version, types) {
                                 case 7:
                                     if (!(_a < modulesCombinedCSS_1.length)) return [3 /*break*/, 10];
                                     modulePathCSS = modulesCombinedCSS_1[_a];
-                                    console.log('upload css: ' + modulePathCSS);
-                                    return [4 /*yield*/, client.put(path.join(_config.entry_css, modulePathCSS), _config.remote_entry_styles + modulePathCSS)["catch"](function (err) {
-                                            console.log('upload css error: ' + err);
+                                    console.log("upload css: " + modulePathCSS);
+                                    return [4 /*yield*/, client
+                                            .put(path.join(_config.entry_css, modulePathCSS), _config.remote_entry_styles + modulePathCSS)["catch"](function (err) {
+                                            console.log("upload css error: " + err);
                                         })];
                                 case 8:
                                     resultCSS = _c.sent();
-                                    console.log('upload css result: ' + resultCSS);
+                                    console.log("upload css result: " + resultCSS);
                                     _c.label = 9;
                                 case 9:
                                     _a++;
@@ -175,19 +185,20 @@ function insertVersion(version, types) {
                                 case 11:
                                     if (!(_b < jspList_1.length)) return [3 /*break*/, 14];
                                     jspFile = jspList_1[_b];
-                                    console.log('upload jsp: ' + jspFile);
-                                    return [4 /*yield*/, client.put(jspFile, _config.remote_entry_jsp + path.basename(jspFile))["catch"](function (err) {
-                                            console.log('upload jsp error: ' + err);
+                                    console.log("upload jsp: " + jspFile);
+                                    return [4 /*yield*/, client
+                                            .put(jspFile, _config.remote_entry_jsp + path.basename(jspFile))["catch"](function (err) {
+                                            console.log("upload jsp error: " + err);
                                         })];
                                 case 12:
                                     resultJSP = _c.sent();
-                                    console.log('upload jsp result: ' + resultJSP);
+                                    console.log("upload jsp result: " + resultJSP);
                                     _c.label = 13;
                                 case 13:
                                     _b++;
                                     return [3 /*break*/, 11];
                                 case 14:
-                                    console.log('end upload files ');
+                                    console.log("end upload files ");
                                     client.end();
                                     _c.label = 15;
                                 case 15: return [2 /*return*/];
@@ -211,7 +222,7 @@ function compareVersion(newVersion, oldVersion) {
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
-                    console.log('start compareVersion : ' + "".concat(newVersion, " vs ").concat(oldVersion));
+                    console.log("start compareVersion : " + "".concat(newVersion, " vs ").concat(oldVersion));
                     return [4 /*yield*/, loadConfig()];
                 case 1:
                     _config = _c.sent();
@@ -224,7 +235,7 @@ function compareVersion(newVersion, oldVersion) {
                     oldFiles = _c.sent();
                     dbUtils.close();
                     if (!((_a = oldFiles === null || oldFiles === void 0 ? void 0 : oldFiles[0]) === null || _a === void 0 ? void 0 : _a.version) || !((_b = newFiles === null || newFiles === void 0 ? void 0 : newFiles[0]) === null || _b === void 0 ? void 0 : _b.version)) {
-                        console.log('invalid version !');
+                        console.log("invalid version !");
                         return [2 /*return*/];
                     }
                     changedFiles = [];
@@ -237,14 +248,14 @@ function compareVersion(newVersion, oldVersion) {
                             changedFiles.push(JSON.stringify({
                                 name: file.name,
                                 newDate: dateFormat(file.date),
-                                oldDate: (old === null || old === void 0 ? void 0 : old.date) ? dateFormat(old === null || old === void 0 ? void 0 : old.date) : ''
+                                oldDate: (old === null || old === void 0 ? void 0 : old.date) ? dateFormat(old === null || old === void 0 ? void 0 : old.date) : ""
                             }));
-                            copiedFiles.push(file.name.split('\\').join('/'));
+                            copiedFiles.push(file.name.split("\\").join("/"));
                         }
                     });
-                    console.log('result:', "\n".concat(changedFiles.join('\n')));
+                    console.log("result:", "\n".concat(changedFiles.join("\n")));
                     console.log("  ----------------------------------------------------\n  --------------------- Copy\u2193 -----------------------\n  ----------------------------------------------------");
-                    console.log("".concat(copiedFiles.join('\n')));
+                    console.log("".concat(copiedFiles.join("\n")));
                     return [2 /*return*/];
             }
         });
@@ -265,10 +276,10 @@ function compareLastVersion() {
                     files = _a.sent();
                     dbUtils.close();
                     if ((files === null || files === void 0 ? void 0 : files.length) !== 2) {
-                        console.log('invalid row length !');
+                        console.log("invalid row length !");
                         return [2 /*return*/];
                     }
-                    console.log('start compareVersion : ' + "".concat(files[0].version, " vs ").concat(files[1].version));
+                    console.log("start compareVersion : " + "".concat(files[0].version, " vs ").concat(files[1].version));
                     changedFiles = [];
                     copiedFiles = [];
                     oldFileList = JSON.parse(files[1].files);
@@ -279,14 +290,14 @@ function compareLastVersion() {
                             changedFiles.push(JSON.stringify({
                                 name: file.name,
                                 newDate: dateFormat(file.date),
-                                oldDate: (old === null || old === void 0 ? void 0 : old.date) ? dateFormat(old === null || old === void 0 ? void 0 : old.date) : ''
+                                oldDate: (old === null || old === void 0 ? void 0 : old.date) ? dateFormat(old === null || old === void 0 ? void 0 : old.date) : ""
                             }));
-                            copiedFiles.push(file.name.split('\\').join('/'));
+                            copiedFiles.push(file.name.split("\\").join("/"));
                         }
                     });
-                    console.log('result:', "\n".concat(changedFiles.join('\n')));
+                    console.log("result:", "\n".concat(changedFiles.join("\n")));
                     console.log("  ----------------------------------------------------\n  --------------------- Copy\u2193 -----------------------\n  ----------------------------------------------------");
-                    console.log("".concat(copiedFiles.join('\n')));
+                    console.log("".concat(copiedFiles.join("\n")));
                     return [2 /*return*/];
             }
         });
@@ -311,7 +322,7 @@ function copyCompileFiles(version) {
                                 case 0:
                                     dbUtils.close();
                                     if (!(jtracFiles === null || jtracFiles === void 0 ? void 0 : jtracFiles.length) || (jtracFiles === null || jtracFiles === void 0 ? void 0 : jtracFiles.length) === 0) {
-                                        console.log('error in search');
+                                        console.log("error in search");
                                         return [2 /*return*/];
                                     }
                                     _i = 0, jtracFiles_1 = jtracFiles;
@@ -320,7 +331,7 @@ function copyCompileFiles(version) {
                                     if (!(_i < jtracFiles_1.length)) return [3 /*break*/, 6];
                                     jtrac = jtracFiles_1[_i];
                                     console.log("start copy jtrac: ".concat(jtrac.jtrac_no));
-                                    filelist = (_d = jtrac.file_list) === null || _d === void 0 ? void 0 : _d.split(',');
+                                    filelist = (_d = jtrac.file_list) === null || _d === void 0 ? void 0 : _d.split(",");
                                     _loop_1 = function (file) {
                                         var result;
                                         return __generator(this, function (_f) {
@@ -332,7 +343,7 @@ function copyCompileFiles(version) {
                                                 case 1:
                                                     result = _f.sent();
                                                     if (result) {
-                                                        console.log('copied: ', file);
+                                                        console.log("copied: ", file);
                                                     }
                                                     return [2 /*return*/];
                                             }
@@ -365,7 +376,7 @@ function copyCompileFiles(version) {
                                                 case 1:
                                                     result = _g.sent();
                                                     if (result) {
-                                                        console.log('copied: ', fixedFile);
+                                                        console.log("copied: ", fixedFile);
                                                     }
                                                     return [2 /*return*/];
                                             }
@@ -401,180 +412,188 @@ function uploadIDC() {
                 case 0: return [4 /*yield*/, loadConfig(IDC_CONFIG_FILE)];
                 case 1:
                     _IDCConfig = _d.sent();
-                    return [4 /*yield*/, (0, fileUtils_1.readTxtFile)(path.resolve(_IDCConfig.file_list))];
+                    return [4 /*yield*/, loadAbsoluteConfig(_IDCConfig.ftp_store)];
                 case 2:
+                    _ftp = _d.sent();
+                    return [4 /*yield*/, (0, fileUtils_1.readTxtFile)(path.resolve(_IDCConfig.file_list))];
+                case 3:
                     fileText = _d.sent();
                     if (!fileText) {
-                        log('error in read file list', 'red');
+                        log("error in read file list", "red");
                         return [2 /*return*/];
                     }
-                    fileList = fileText.replace(/\r/g, '').split('\n');
-                    uploadEntry = path.resolve(_IDCConfig.entry, 'work', dateFormat(new Date().getTime()).replace(/:/g, '-'));
-                    idcRoot = path.resolve(uploadEntry, 'backup');
-                    testRoot = path.resolve(uploadEntry, 'upload');
+                    fileList = fileText.replace(/\r/g, "").split("\n");
+                    uploadEntry = path.resolve(_IDCConfig.entry, "work", dateFormat(new Date().getTime()).replace(/:/g, "-"));
+                    idcRoot = path.resolve(uploadEntry, "backup");
+                    testRoot = path.resolve(uploadEntry, "upload");
                     return [4 /*yield*/, (0, fileUtils_1.mkdir)(idcRoot)];
-                case 3:
+                case 4:
                     _d.sent();
                     return [4 /*yield*/, (0, fileUtils_1.mkdir)(testRoot)];
-                case 4:
+                case 5:
                     _d.sent();
                     fileList.forEach(function (file, index) {
                         var ext = (0, fileUtils_1.getFileExtension)(file);
-                        if (ext === 'js') {
-                            fileList[index] = '/static/mp/script/' + file;
-                            fileList.push(fileList[index] + '.gz', fileList[index] + '.map');
+                        if (ext === "js") {
+                            fileList[index] = "/static/mp/script/" + file;
+                            fileList.push(fileList[index] + ".gz", fileList[index] + ".map");
                         }
-                        else if (ext === 'css') { //css
-                            fileList[index] = '/static/mp/styles/' + file;
-                            fileList.push(fileList[index] + '.gz');
+                        else if (ext === "css") {
+                            //css
+                            fileList[index] = "/static/mp/styles/" + file;
+                            fileList.push(fileList[index] + ".gz");
                         }
                     });
                     //开始备份
-                    log('start backup idc', 'yellow');
+                    log("start backup idc", "yellow");
                     clientBackup = new SftpClient();
                     return [4 /*yield*/, clientBackup.connect({
-                            host: _IDCConfig.ftp_host_idc_node1,
+                            host: _ftp.ftp_host_idc_node1,
                             port: 22,
-                            username: _IDCConfig.ftp_user_idc_node1,
-                            password: _IDCConfig.ftp_pw_idc_node1
+                            username: _ftp.ftp_user_idc_node1,
+                            password: _ftp.ftp_pw_idc_node1
                         })];
-                case 5:
+                case 6:
                     _d.sent();
                     _i = 0, fileList_1 = fileList;
-                    _d.label = 6;
-                case 6:
-                    if (!(_i < fileList_1.length)) return [3 /*break*/, 10];
+                    _d.label = 7;
+                case 7:
+                    if (!(_i < fileList_1.length)) return [3 /*break*/, 11];
                     uploadFile = fileList_1[_i];
                     remoteFile = _IDCConfig.remote_entry_idc + uploadFile;
                     localFile = path.join(idcRoot, uploadFile);
                     return [4 /*yield*/, (0, fileUtils_1.mkdir)(path.dirname(localFile))];
-                case 7:
+                case 8:
                     _d.sent();
                     writeStream = fs.createWriteStream(localFile);
-                    return [4 /*yield*/, clientBackup.get(remoteFile, writeStream)["catch"](function (err) {
-                            log('download idc error: ' + err, 'red');
+                    return [4 /*yield*/, clientBackup
+                            .get(remoteFile, writeStream)["catch"](function (err) {
+                            log("download idc error: " + err, "red");
                         })];
-                case 8:
+                case 9:
                     result = _d.sent();
                     if (result) {
-                        log('download idc success: ' + remoteFile, 'green');
+                        log("download idc success: " + remoteFile, "green");
                     }
-                    _d.label = 9;
-                case 9:
-                    _i++;
-                    return [3 /*break*/, 6];
+                    _d.label = 10;
                 case 10:
-                    log('end backup idc', 'yellow');
+                    _i++;
+                    return [3 /*break*/, 7];
+                case 11:
+                    log("end backup idc", "yellow");
                     clientBackup.end();
                     //备份结束
-                    log('---------------------------------------------------------', 'cyan');
-                    log('---------------------------------------------------------', 'cyan');
+                    log("---------------------------------------------------------", "cyan");
+                    log("---------------------------------------------------------", "cyan");
                     //开始下载待传文件
-                    log('start download files from test server', 'yellow');
+                    log("start download files from test server", "yellow");
                     clientTest = new SftpClient();
                     return [4 /*yield*/, clientTest.connect({
-                            host: _IDCConfig.ftp_host_test,
+                            host: _ftp.ftp_host_test,
                             port: 22,
-                            username: _IDCConfig.ftp_user_test,
-                            password: _IDCConfig.ftp_pw_test
+                            username: _ftp.ftp_user_test,
+                            password: _ftp.ftp_pw_test
                         })];
-                case 11:
+                case 12:
                     _d.sent();
                     _a = 0, fileList_2 = fileList;
-                    _d.label = 12;
-                case 12:
-                    if (!(_a < fileList_2.length)) return [3 /*break*/, 16];
+                    _d.label = 13;
+                case 13:
+                    if (!(_a < fileList_2.length)) return [3 /*break*/, 17];
                     downloadFile = fileList_2[_a];
                     remoteFile = _IDCConfig.remote_entry_test + downloadFile;
                     localFile = path.join(testRoot, downloadFile);
                     return [4 /*yield*/, (0, fileUtils_1.mkdir)(path.dirname(localFile))];
-                case 13:
+                case 14:
                     _d.sent();
                     writeStream = fs.createWriteStream(localFile);
-                    return [4 /*yield*/, clientTest.get(remoteFile, writeStream)["catch"](function (err) {
-                            log('download test error: ' + err, 'red');
+                    return [4 /*yield*/, clientTest
+                            .get(remoteFile, writeStream)["catch"](function (err) {
+                            log("download test error: " + err, "red");
                         })];
-                case 14:
+                case 15:
                     result = _d.sent();
                     if (result) {
-                        log('download test success: ' + remoteFile, 'green');
+                        log("download test success: " + remoteFile, "green");
                     }
-                    _d.label = 15;
-                case 15:
-                    _a++;
-                    return [3 /*break*/, 12];
+                    _d.label = 16;
                 case 16:
-                    log('end download files from test server', 'yellow');
+                    _a++;
+                    return [3 /*break*/, 13];
+                case 17:
+                    log("end download files from test server", "yellow");
                     clientTest.end();
                     //下载待传文件结束
-                    log('---------------------------------------------------------', 'cyan');
-                    log('---------------------------------------------------------', 'cyan');
+                    log("---------------------------------------------------------", "cyan");
+                    log("---------------------------------------------------------", "cyan");
                     //开始上传
-                    log('start upload files to node1', 'yellow');
+                    log("start upload files to node1", "yellow");
                     clientNode1 = new SftpClient();
                     return [4 /*yield*/, clientNode1.connect({
-                            host: _IDCConfig.ftp_host_idc_node1,
+                            host: _ftp.ftp_host_idc_node1,
                             port: 22,
-                            username: _IDCConfig.ftp_user_idc_node1,
-                            password: _IDCConfig.ftp_pw_idc_node1
+                            username: _ftp.ftp_user_idc_node1,
+                            password: _ftp.ftp_pw_idc_node1
                         })];
-                case 17:
+                case 18:
                     _d.sent();
                     _b = 0, fileList_3 = fileList;
-                    _d.label = 18;
-                case 18:
-                    if (!(_b < fileList_3.length)) return [3 /*break*/, 21];
+                    _d.label = 19;
+                case 19:
+                    if (!(_b < fileList_3.length)) return [3 /*break*/, 22];
                     uploadFile1 = fileList_3[_b];
                     remoteFile = _IDCConfig.remote_entry_idc + uploadFile1;
                     localFile = path.join(testRoot, uploadFile1);
-                    return [4 /*yield*/, clientNode1.put(localFile, remoteFile)["catch"](function (err) {
-                            log('upload node1 error: ' + err, 'red');
+                    return [4 /*yield*/, clientNode1
+                            .put(localFile, remoteFile)["catch"](function (err) {
+                            log("upload node1 error: " + err, "red");
                         })];
-                case 19:
+                case 20:
                     result = _d.sent();
                     if (result) {
-                        log('upload node1 success: ' + remoteFile, 'green');
+                        log("upload node1 success: " + remoteFile, "green");
                     }
-                    _d.label = 20;
-                case 20:
-                    _b++;
-                    return [3 /*break*/, 18];
+                    _d.label = 21;
                 case 21:
-                    log('end upload files to node1', 'yellow');
+                    _b++;
+                    return [3 /*break*/, 19];
+                case 22:
+                    log("end upload files to node1", "yellow");
                     clientNode1.end();
-                    log('---------------------------------------------------------', 'cyan');
-                    log('---------------------------------------------------------', 'cyan');
-                    log('start upload files to node2', 'yellow');
+                    log("---------------------------------------------------------", "cyan");
+                    log("---------------------------------------------------------", "cyan");
+                    log("start upload files to node2", "yellow");
                     clientNode2 = new SftpClient();
                     return [4 /*yield*/, clientNode2.connect({
-                            host: _IDCConfig.ftp_host_idc_node2,
+                            host: _ftp.ftp_host_idc_node2,
                             port: 22,
-                            username: _IDCConfig.ftp_user_idc_node2,
-                            password: _IDCConfig.ftp_pw_idc_node2
+                            username: _ftp.ftp_user_idc_node2,
+                            password: _ftp.ftp_pw_idc_node2
                         })];
-                case 22:
+                case 23:
                     _d.sent();
                     _c = 0, fileList_4 = fileList;
-                    _d.label = 23;
-                case 23:
-                    if (!(_c < fileList_4.length)) return [3 /*break*/, 26];
+                    _d.label = 24;
+                case 24:
+                    if (!(_c < fileList_4.length)) return [3 /*break*/, 27];
                     uploadFile2 = fileList_4[_c];
                     remoteFile = _IDCConfig.remote_entry_idc + uploadFile2;
                     localFile = path.join(testRoot, uploadFile2);
-                    return [4 /*yield*/, clientNode2.put(localFile, remoteFile)["catch"](function (err) {
-                            log('upload node2 error: ' + err, 'red');
+                    return [4 /*yield*/, clientNode2
+                            .put(localFile, remoteFile)["catch"](function (err) {
+                            log("upload node2 error: " + err, "red");
                         })];
-                case 24:
+                case 25:
                     result = _d.sent();
                     if (result) {
-                        log('upload node2 success: ' + remoteFile, 'green');
+                        log("upload node2 success: " + remoteFile, "green");
                     }
-                    _d.label = 25;
-                case 25:
-                    _c++;
-                    return [3 /*break*/, 23];
+                    _d.label = 26;
                 case 26:
-                    log('end upload files to node2', 'yellow');
+                    _c++;
+                    return [3 /*break*/, 24];
+                case 27:
+                    log("end upload files to node2", "yellow");
                     clientNode2.end();
                     return [2 /*return*/];
             }
@@ -594,10 +613,10 @@ function uploadIDCCheck() {
                 case 2:
                     fileText = _a.sent();
                     if (!fileText) {
-                        log('error in read file list', 'red');
+                        log("error in read file list", "red");
                         return [2 /*return*/];
                     }
-                    log(fileText, 'yellow');
+                    log(fileText, "yellow");
                     return [2 /*return*/];
             }
         });
@@ -605,29 +624,32 @@ function uploadIDCCheck() {
 }
 exports.uploadIDCCheck = uploadIDCCheck;
 function log(info, color) {
-    if (color === void 0) { color = 'normal'; }
-    if (color === 'normal') {
+    if (color === void 0) { color = "normal"; }
+    if (color === "normal") {
         console.log(info);
     }
-    else if (color === 'red') {
-        console.log('\x1b[31m%s\x1b[0m', info);
+    else if (color === "red") {
+        console.log("\x1b[31m%s\x1b[0m", info);
     }
-    else if (color === 'green') {
-        console.log('\x1b[32m%s\x1b[0m', info);
+    else if (color === "green") {
+        console.log("\x1b[32m%s\x1b[0m", info);
     }
-    else if (color === 'yellow') {
-        console.log('\x1b[33m%s\x1b[0m', info);
+    else if (color === "yellow") {
+        console.log("\x1b[33m%s\x1b[0m", info);
     }
-    else if (color === 'blue') {
-        console.log('\x1b[34m%s\x1b[0m', info);
+    else if (color === "blue") {
+        console.log("\x1b[34m%s\x1b[0m", info);
     }
-    else if (color === 'cyan') {
-        console.log('\x1b[36m%s\x1b[0m', info);
+    else if (color === "cyan") {
+        console.log("\x1b[36m%s\x1b[0m", info);
     }
 }
 function loadConfig(file) {
     if (file === void 0) { file = CONFIG_FILE; }
     return (0, fileUtils_1.readJsonFile)(path.resolve(_baseDir, file));
+}
+function loadAbsoluteConfig(paths) {
+    return (0, fileUtils_1.readJsonFile)(paths);
 }
 function recordByDir(rootPath, dir, data) {
     return __awaiter(this, void 0, void 0, function () {
@@ -639,7 +661,9 @@ function recordByDir(rootPath, dir, data) {
                         switch (_a.label) {
                             case 0:
                                 filesFilter = dir.filter(function (filefilter) {
-                                    return (filefilter.isFile() && _config.extension.includes((0, fileUtils_1.getFileExtension)(filefilter.name))) || filefilter.isDirectory();
+                                    return ((filefilter.isFile() &&
+                                        _config.extension.includes((0, fileUtils_1.getFileExtension)(filefilter.name))) ||
+                                        filefilter.isDirectory());
                                 });
                                 _i = 0, filesFilter_1 = filesFilter;
                                 _a.label = 1;
@@ -688,9 +712,13 @@ function writeHistory(path, data) {
     });
 }
 function dateFormat(timestamp) {
-    return new Date(timestamp).toLocaleDateString('zh-CN', {
-        year: 'numeric', month: 'numeric', day: 'numeric',
-        hour: 'numeric', minute: 'numeric', second: 'numeric',
+    return new Date(timestamp).toLocaleDateString("zh-CN", {
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "numeric",
+        second: "numeric",
         hour12: false
     });
 }
