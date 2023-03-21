@@ -1,0 +1,5 @@
+node_modules
+upload_check_config.json
+upload_idc_config.json
+check_upload_copy.cmd
+package-lock.json
